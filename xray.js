@@ -101,6 +101,22 @@ function genSpectrum(photonEnergy, Etot, charStrength, noiseSD) {
     return d3.zip(photonEnergy, nbPhotons);
 }
 
+
+function meanEnergy(spectrum) {
+    // Compute the mean energy in the given spectrum.
+    var totalEnergy = d3.sum(spectrum, function(d) { return d[0] * d[1]; });
+    var totalPhotons = d3.sum(spectrum, function(d) { return d[1]; });
+    return totalEnergy / totalPhotons;
+}
+
+
+function totalIntensity(spectrum) {
+    // Compute the total intensity of the given spectrum in W/m^2.
+    var dE = spectrum[1][0] - spectrum[0][0];
+    var totalPhotons = d3.sum(spectrum, function(d) { return d[1]; });
+    return totalPhotons * dE * electronChargeMantissa;
+}
+
 //function fastSpectrum(photonEnergy, n0, charStrength, noiseSD) {
     //if (n0 === undefined) { n0 = 100; }
     //if (charStrength === undefined) { charStrength = 0.01; }

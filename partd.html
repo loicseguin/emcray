@@ -1,0 +1,193 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width" />
+    <title>Simulation d'une radiographie – Partie D</title>
+    <link rel="stylesheet" type="text/css" href="style.css" />
+  </head>
+  <body>
+    <div class="container">
+      <div id="informations">
+      <h1>Simulation d'une radiographie</h1>
+      <h2>Partie D – Filtres</h2>
+      <p><a href="partc.html">« Partie C</a> <a href="parte.html">Partie E »</a>
+      <p>
+      La figure du haut montre deux spectres : en bleu on retrouve le spectre
+      sortant de l'anode (et donc filtré par l'anode), en orange on retrouve le
+      spectre sortant du tube à rayons X filtré par un filtre dont les
+      propriétés sont indiquées dans les contrôles sous la figure.
+      </p>
+      <p>
+      La figure du bas montre les spectres suivants :
+      <table>
+        <tr>
+          <th>Spectre</th><th>Description</th><th>Énergie moyenne
+            (keV)</th><th>Intensité totale (W/m<sup>2</sup>)</th>
+        </tr>
+        <tr>
+          <td>Bleu</td><td>Spectre idéal</td><td id="e1"></td><td id="i1"></td>
+        </tr>
+        <tr>
+          <td>Orange</td><td>À la sortie de l'anode</td><td id="e2"></td><td id="i2"></td>
+        </tr>
+        <tr>
+          <td>Vert</td><td>Spectre orange après filtration par un premier filtre en
+            aluminium</td><td id="e3"></td><td id="i3"></td>
+        </tr>
+        <tr>
+          <td>Rouge</td><td>Spectre vert après filtration par un second filtre
+          d'un matériau inconnu</td><td id="e4"></td><td id="i4"></td>
+        </tr>
+      </table>
+      <p>
+      Voici une liste de quelques coefficients d'atténuation linéaires
+      pour une énergie de rayons X de 30 keV.
+      </p>
+      <table>
+        <tr>
+          <th>Matériau</th><th>Coefficient d'atténuation linéaire
+            (m<sup>-1</sup>)</th>
+        </tr>
+      <tr>
+        <td>Aluminium</td><td id="almu">304.435920</td>
+      </tr>
+      <tr>
+        <td>Cuivre</td><td id="cumu">9784.320000</td>
+      </tr>
+      <tr>
+        <td>Tungstène</td><td id="wmu">43755.250000</td>
+      </tr>
+      </table>
+      </div>
+      <div id="figures">
+        <div id="figure1">
+          <h4>Effet de l'épaisseur d'un filtre sur le spectre transmis</h4>
+        </div>
+        <div class="controls">
+          <p>
+          <input type="radio" id="Alchoice" name="material" value="aluminium"
+          checked>
+          <label for="Alchoice">Aluminium</label>
+
+          <input type="radio" id="Cuchoice" name="material" value="copper">
+          <label for="Cuchoice">Cuivre</label>
+
+          <input type="radio" id="Wchoice" name="material" value="tungsten">
+          <label for="Wchoice">Tungstène</label>
+          <br />
+          <input id="thickness" type="range" min="0" max="500"
+            style="width: 120px;">
+          Épaisseur du filtre : <span id="thicknessValue"></span>
+          </p>
+        </div>
+        <div id="figure2">
+          <h4>Spectres de rayons X transmis avec différents filtres</h4>
+        </div>
+      </div>
+      <script src="http://d3js.org/d3.v4.min.js"></script>
+      <script src="plot.js"></script>
+      <script src="xray.js"></script>
+      <script src="filtration.js"></script>
+      <script src="attenuationcoeff.js"></script>
+      <script>
+var plot1 = lineChart()
+  .xAxisLabel("Énergie des photons (keV)")
+  .yAxisLabel("Nombre de photons (x 10¹⁴)");
+var plot2 = lineChart()
+  .xAxisLabel("Énergie des photons (keV)")
+  .yAxisLabel("Nombre de photons (x 10¹⁴)");
+
+var thickness = 100e-6;
+var photonEnergy = d3.range(0, 80, 0.1);
+var spec = genSpectrum(photonEnergy, 1.0, 0.02, 0.01);
+var anodeFiltered = anodeFiltration(spec);
+var specAnode = anodeFiltered[0];
+var allAlCoeffs = allAttenuationCoeffs(muAluminium, photonEnergy);
+var allWCoeffs = allAttenuationCoeffs(muTungsten, photonEnergy);
+var allCuCoeffs = allAttenuationCoeffs(muCopper, photonEnergy);
+var specFiltered = beerLambert(specAnode, thickness, allAlCoeffs);
+var allCoeffs = allAlCoeffs;
+
+d3.select("#figure1")
+  .data([specAnode])
+  .call(plot1);
+d3.select("#figure1")
+  .data([specFiltered])
+  .call(plot1);
+
+d3.select("#thicknessValue")
+  .html(thickness * 1e6 + " µm");
+d3.select("#thickness")
+  .attr("value", thickness * 1e6)
+  .on("input", function() {
+      thickness = +this.value / 1e6;
+      specFiltered = beerLambert(specAnode, thickness, allCoeffs);
+      plot1.update(specFiltered, "#line1");
+      d3.select("#thicknessValue")
+        .html(this.value + " µm");
+  });
+d3.selectAll("input[name='material']")
+  .on("change", function() {
+    switch(this.value) {
+        case "aluminium":
+          allCoeffs = allAlCoeffs;
+          break;
+        case "copper":
+          allCoeffs = allCuCoeffs;
+          break;
+        case "tungsten":
+          allCoeffs = allWCoeffs;
+          break;
+        default:
+          allCoeffs = allAlCoeffs;
+          break;
+    }
+    specFiltered = beerLambert(specAnode, thickness, allCoeffs);
+    plot1.update(specFiltered, "#line1");
+  });
+
+
+var specAlFiltered = beerLambert(specAnode, 1e-3, allAlCoeffs);
+var specCuFiltered = beerLambert(specAlFiltered, 1e-4, allCuCoeffs);
+
+d3.select("#figure2")
+  .data([spec])
+  .call(plot2);
+d3.select("#figure2")
+  .data([specAnode])
+  .call(plot2);
+d3.select("#figure2")
+  .data([specAlFiltered])
+  .call(plot2);
+d3.select("#figure2")
+  .data([specCuFiltered])
+  .call(plot2);
+
+var idealMeanEnergy = meanEnergy(spec);
+var anodeMeanEnergy = meanEnergy(specAnode);
+var alMeanEnergy = meanEnergy(specAlFiltered);
+var cuMeanEnergy = meanEnergy(specCuFiltered);
+d3.select("#e1").html(idealMeanEnergy.toPrecision(3));
+d3.select("#e2").html(anodeMeanEnergy.toPrecision(3));
+d3.select("#e3").html(alMeanEnergy.toPrecision(3));
+d3.select("#e4").html(cuMeanEnergy.toPrecision(3));
+
+var idealTotalIntensity = totalIntensity(spec);
+var anodeTotalIntensity = totalIntensity(specAnode);
+var alTotalIntensity = totalIntensity(specAlFiltered);
+var cuTotalIntensity = totalIntensity(specCuFiltered);
+d3.select("#i1").html(idealTotalIntensity.toPrecision(3));
+d3.select("#i2").html(anodeTotalIntensity.toPrecision(3));
+d3.select("#i3").html(alTotalIntensity.toPrecision(3));
+d3.select("#i4").html(cuTotalIntensity.toPrecision(3));
+
+d3.select("#almu").html(findAttenuation(muAluminium, 30).toFixed(0));
+d3.select("#cumu").html(findAttenuation(muCopper, 30).toFixed(0));
+d3.select("#wmu").html(findAttenuation(muTungsten, 30).toFixed(0));
+      </script>
+    </div>
+  </body>
+</html>
+
+
