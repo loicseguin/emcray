@@ -52,10 +52,11 @@ var draw = handDrawing();
 var dE = 5;  // in keV
 var anodeDepth = 3;  // in µm
 var anodeAngle = 30;  // in degrees
-var gamma = 0.4;
+var gamma = 0.6;
 var kVc = 50;  // in kV
 var mAs = 1.5;  // arbitrary units, used directly for the total energy
 var Emax = 1.5;
+var curve = new sensitometricCurve(Math.log10(Emax), 3.0, gamma);
 var photonEnergy,
   spec,
   anodeFiltered,
@@ -72,8 +73,8 @@ function redrawHand() {
   specAnode = anodeFiltered[0];
 
   transmittedI = getHandXray(tissues, thickness, specAnode);
-  DOs = transmittedI.map(function(d) {
-    return getDOs(d, 3.0, gamma, Emax);
+  DOs = transmittedI.map(function(row) {
+    return row.map(function(d) { return curve.energyToRGB(d); });
   });
   d3.select("#figure1")
     .data([DOs])

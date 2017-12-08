@@ -63,21 +63,18 @@ var plot = lineChart()
 
 var draw = greyscaleDrawing();
 
-var defaultDepth = 3;  // in µm
-var defaultAngle = 30;  // in degrees
-var defaultGamma = 3.0;
+var anodeDepth = 3;  // in µm
+var anodeAngle = 30;  // in degrees
+var gamma = 3.0;
 var photonEnergy = d3.range(0, 80, 0.1);
 var spec = genSpectrum(photonEnergy, 1.5, 0.02, 0.01);
+var total = totalIntensity(spec);
+var maxLogIt = 0.8*Math.log10(total);  // calibrate sensor for 80 % of unfiltered spectrum
 
-var anodeFiltered = anodeFiltration(spec, defaultDepth * 1e-6,
-  defaultAngle * Math.PI / 180);
-var specAnode = anodeFiltered[0];
-var energiesAnode = anodeFiltered[1];
-var DOs = getDOs(energiesAnode, 3.0, defaultGamma);
-
-var depth = defaultDepth * 1e-6;
-var angle = defaultAngle * Math.PI / 180;
-var gamma = defaultGamma;
+var data = anodeFiltration(spec, anodeDepth * 1e-6,
+  anodeAngle * Math.PI / 180);
+var curve = new sensitometricCurve(maxLogIt, 3.0, gamma);
+var DOs = data[1].map(function(d) { return curve.energyToRGB(d); });
 
 d3.select("#figure1")
   .data([DOs])
@@ -87,53 +84,47 @@ d3.select("#figure2")
   .data([spec])
   .call(plot);
 d3.select("#figure2")
-  .data([specAnode])
+  .data([data[0]])
   .call(plot);
 
+function redraw() {
+  data = anodeFiltration(spec, anodeDepth * 1e-6, anodeAngle * Math.PI / 180);
+  plot.update(data[0], "#line1");
+  DOs = data[1].map(function(d) { return curve.energyToRGB(d); });
+  d3.select("#figure1")
+    .data([DOs])
+    .call(draw);
+}
+
 d3.select("#depthValue")
-  .html(defaultDepth + " µm");
+  .html(anodeDepth + " µm");
 d3.select("#depth")
-  .attr("value", defaultDepth)
+  .attr("value", anodeDepth)
   .on("input", function() {
-      depth = +this.value / 1e6;
-      var data = anodeFiltration(spec, depth, angle);
-      plot.update(data[0], "#line1");
-      DOs = getDOs(data[1], 3.0, gamma);
-      d3.select("#figure1")
-        .data([DOs])
-        .call(draw);
+      anodeDepth = +this.value;
+      redraw();
       d3.select("#depthValue")
         .html(this.value + " µm");
   });
 
 d3.select("#angleValue")
-  .html(defaultAngle + "°");
+  .html(anodeAngle + "°");
 d3.select("#angle")
-  .attr("value", defaultAngle)
+  .attr("value", anodeAngle)
   .on("input", function() {
-      angle = +this.value * Math.PI / 180;
-      var data = anodeFiltration(spec, depth, angle);
-      plot.update(data[0], "#line1");
-      DOs = getDOs(data[1]);
-      d3.select("#figure1")
-        .data([DOs])
-        .call(draw);
+      anodeAngle = +this.value;
+      redraw();
       d3.select("#angleValue")
         .html(this.value + "°");
   });
 
 d3.select("#gammaValue")
-  .html(defaultGamma);
+  .html(gamma);
 d3.select("#gamma")
-  .attr("value", defaultGamma)
+  .attr("value", curve.gamma)
   .on("input", function() {
-      gamma = +this.value;
-      var data = anodeFiltration(spec, depth, angle);
-      plot.update(data[0], "#line1");
-      DOs = getDOs(data[1], 3.0, gamma);
-      d3.select("#figure1")
-        .data([DOs])
-        .call(draw);
+      curve.setGamma(+this.value);
+      redraw();
       d3.select("#gammaValue")
         .html(this.value);
   });
