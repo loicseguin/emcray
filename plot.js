@@ -243,7 +243,7 @@ function lineChart() {
 
 
 function greyscaleDrawing() {
-    var width = 500;
+    var width = 500,
         height = 80;
 
     function draw(selection) {
@@ -267,7 +267,7 @@ function greyscaleDrawing() {
             }
             // Enter
             svg.selectAll("rect")
-                .data(DOs)
+                .data(data)
                 .enter()
                 .append("rect")
                 .attr("x", function(d, i) { return i * binwidth; })
@@ -279,12 +279,67 @@ function greyscaleDrawing() {
 
             // Update
             svg.selectAll("rect")
-                .data(DOs)
+                .data(data)
                 .attr("x", function(d, i) { return i * binwidth; })
                 .attr("width", binwidth)
                 .attr("fill", function(d, i) { return color(d); })
                 .attr("stroke", function(d, i) { return color(d); });
 
+        });
+    }
+
+    return draw;
+}
+
+function handDrawing() {
+    var imagewidth = 90,
+        imageheight = 85,
+        pixel = 3,
+        width = pixel * imagewidth,
+        height = pixel * imageheight;
+
+    function draw(selection) {
+
+        selection.each(function(data) {
+
+            // Select the svg element if it exists.
+            var svg = d3.select(this).selectAll("svg").data([data]);
+            var svgEnter = svg.enter().append("svg");
+
+            // Update outer dimensions, ie, dimensions of the svg element.
+            svg = svg.merge(svgEnter);
+            svg.attr("width", width)
+                .attr("height", height);
+
+            function color(d) {
+                var rgb = Math.round(d);
+                return "rgb(" + rgb + "," + rgb + "," + rgb + ")";
+            }
+            // Enter
+            svg.selectAll("g")  // each g is a row
+                .data(data)
+                .enter()
+                .append("g")
+                .attr("transform", function(d, i) { return "translate(0," + pixel * i + ")"; })
+                .selectAll("rect")
+                .data(function (d, i) { return d; })
+                .enter()
+                .append("rect")
+                .attr("x", function(d, i) { return i * pixel; })
+                .attr("y", 0)
+                .attr("width", pixel)
+                .attr("height", pixel)
+                .attr("fill", function(d, i) { return color(d); })
+                .attr("stroke", function(d, i) { return color(d); });
+
+            // Update
+            svg.selectAll("g")
+                .data(data)
+                .selectAll("rect")
+                .data(function (d, i) { return d; })
+                .attr("x", function(d, i) { return i * pixel; })
+                .attr("fill", function(d, i) { return color(d); })
+                .attr("stroke", function(d, i) { return color(d); });
         });
     }
 
