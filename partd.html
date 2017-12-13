@@ -93,14 +93,14 @@
       <script>
 var plot1 = lineChart()
   .xAxisLabel("Énergie des photons (keV)")
-  .yAxisLabel("Nombre de photons (x 10¹⁴)");
+  .yAxisLabel("Nombre de photons (x 10¹²)");
 var plot2 = lineChart()
   .xAxisLabel("Énergie des photons (keV)")
-  .yAxisLabel("Nombre de photons (x 10¹⁴)");
+  .yAxisLabel("Nombre de photons (x 10¹²)");
 
 var thickness = 100e-6;
 var photonEnergy = d3.range(0, 80, 0.1);
-var spec = genSpectrum(photonEnergy, 1.0, 0.02, 0.01);
+var spec = genSpectrum(photonEnergy, 1500, 0.02, 0.01);
 var anodeFiltered = anodeFiltration(spec);
 var specAnode = anodeFiltered[0];
 var allAlCoeffs = allAttenuationCoeffs(muAluminium, photonEnergy);
@@ -173,14 +173,14 @@ d3.select("#e2").html(anodeMeanEnergy.toPrecision(3));
 d3.select("#e3").html(alMeanEnergy.toPrecision(3));
 d3.select("#e4").html(cuMeanEnergy.toPrecision(3));
 
-var idealTotalIntensity = totalIntensity(spec);
-var anodeTotalIntensity = totalIntensity(specAnode);
-var alTotalIntensity = totalIntensity(specAlFiltered);
-var cuTotalIntensity = totalIntensity(specCuFiltered);
-d3.select("#i1").html(idealTotalIntensity.toPrecision(3));
-d3.select("#i2").html(anodeTotalIntensity.toPrecision(3));
-d3.select("#i3").html(alTotalIntensity.toPrecision(3));
-d3.select("#i4").html(cuTotalIntensity.toPrecision(3));
+var idealTotalEnergy = totalEnergy(spec);
+var anodeTotalEnergy = totalEnergy(specAnode);
+var alTotalEnergy = totalEnergy(specAlFiltered);
+var cuTotalEnergy = totalEnergy(specCuFiltered);
+d3.select("#i1").html(idealTotalEnergy.toPrecision(3));
+d3.select("#i2").html(anodeTotalEnergy.toPrecision(3));
+d3.select("#i3").html(alTotalEnergy.toPrecision(3));
+d3.select("#i4").html(cuTotalEnergy.toPrecision(3));
 
 d3.select("#almu").html(findAttenuation(muAluminium, 30).toFixed(0));
 d3.select("#cumu").html(findAttenuation(muCopper, 30).toFixed(0));

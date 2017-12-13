@@ -183,7 +183,7 @@ function getHandXray(tissues, thickness, spectrum) {
         spectrum.map(function(d) { return d[0]; }));
     var fractureCoeffs = boneCoeffs.map(function(d) { return d * 0.8; });
     var emptyCoeffs = boneCoeffs.map(function(d) { return 0; });
-    var transmittedI = tissues.map(function(d, i) {
+    var transmittedE = tissues.map(function(d, i) {
         return d.map(function(val, j) {
             //   tissue type (0: nothing, 1: soft tissu, 2: fracture, 3: bone)
             switch(val) {
@@ -203,8 +203,8 @@ function getHandXray(tissues, thickness, spectrum) {
                   coeffs = emptyCoeffs;
                   break;
         }
-        return totalIntensity(beerLambert(spectrum, thickness[i][j], coeffs));
+        return totalEnergy(beerLambert(spectrum, thickness[i][j], coeffs));
     })});
 
-    return transmittedI;
+    return transmittedE;
 }

@@ -32,8 +32,8 @@
               value="50" style="width: 120px;">
             <span id="kVcValue"></span> kVc
             <br>
-            <input id="mAs" type="range" min="0.5" max="5" step="0.1"
-              value="1.5" style="width: 120px;">
+            <input id="mAs" type="range" min="0" max="100" step="2"
+              value="30" style="width: 120px;">
             <span id="mAsValue"></span> mAs
           </p>
         </div>
@@ -52,10 +52,11 @@ var draw = handDrawing();
 var dE = 5;  // in keV
 var anodeDepth = 3;  // in µm
 var anodeAngle = 30;  // in degrees
-var gamma = 0.6;
+var gamma = 1;
 var kVc = 50;  // in kV
-var mAs = 1.5;  // arbitrary units, used directly for the total energy
-var Emax = 1.5;
+var mAs = 40;
+var ntot = mAsToNphotons(mAs)  // convert mAs to number of photons
+var Emax = 0.15;  // arbitrarily chosen to get a reasonable contrast
 var curve = new sensitometricCurve(Math.log10(Emax), 3.0, gamma);
 var photonEnergy,
   spec,
@@ -66,14 +67,14 @@ var photonEnergy,
 
 function redrawHand() {
   photonEnergy = d3.range(0, kVc, dE);
-  spec = genSpectrum(photonEnergy, mAs, 0.02, 0.01);
+  spec = genSpectrum(photonEnergy, ntot, 0.02, 0.01);
 
   anodeFiltered = anodeFiltration(spec, anodeDepth * 1e-6,
     anodeAngle * Math.PI / 180);
   specAnode = anodeFiltered[0];
 
-  transmittedI = getHandXray(tissues, thickness, specAnode);
-  DOs = transmittedI.map(function(row) {
+  transmittedE = getHandXray(tissues, thickness, specAnode);
+  DOs = transmittedE.map(function(row) {
     return row.map(function(d) { return curve.energyToRGB(d); });
   });
   d3.select("#figure1")
@@ -95,14 +96,15 @@ d3.select("#kVc")
   });
 
 d3.select("#mAsValue")
-  .html(mAs * 20);
+  .html(mAs);
 d3.select("#mAs")
   .attr("value", mAs)
   .on("input", function() {
       mAs = +this.value;
+      ntot = mAsToNphotons(mAs);
       redrawHand();
       d3.select("#mAsValue")
-        .html(this.value * 20);
+        .html(this.value);
   });
       </script>
     </div>

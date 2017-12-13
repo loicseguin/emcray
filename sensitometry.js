@@ -1,15 +1,16 @@
 // Functions to define and use a sensitometric curve as well as functions to
 // convert optical densities to rgb values for on screen display.
 
-function sensitometricCurve(logIt, DO, gamma) {
+function sensitometricCurve(logE, DO, gamma) {
     // Define a sensitometric curve by specifying one point in the region of
-    // interest and the gamma value.
-    this.logIt = logIt;
+    // interest and the gamma value. `logE` should be the total energy from the
+    // xray beam transmitted through the patient.
+    this.logE = logE;
     this.DO = DO;
     this.gamma = gamma;
     this.maxDO = 3.0;  // maximum value for the optical density
     this.minDO = 0.3;  // minimum value for the optical density
-    this.yIntercept = this.DO - this.gamma * this.logIt;
+    this.yIntercept = this.DO - this.gamma * this.logE;
     this.minRGB = 0;
     this.maxRGB = 255;
     this.rgbSlope = (this.maxRGB - this.minRGB) / (this.minDO - this.maxDO);
@@ -37,6 +38,6 @@ sensitometricCurve.prototype.energyToRGB = function(energy) {
 
 sensitometricCurve.prototype.setGamma = function(gamma) {
     this.gamma = gamma;
-    this.yIntercept = this.DO - this.gamma * this.logIt;
+    this.yIntercept = this.DO - this.gamma * this.logE;
 }
 

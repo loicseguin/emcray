@@ -100,9 +100,9 @@
       <script src="xray.js"></script>
       <script>
 var tubePotential = [40, 60, 80, 60, 60, 60],
-  etot = [1, 1, 1, 1, 2, 3];
+  ntot = [1000, 1000, 1000, 1000, 2000, 3000];
 
-var datas = d3.zip(tubePotential, etot)
+var datas = d3.zip(tubePotential, ntot)
   .map(function(d) {
     var photonEnergy = d3.range(0, d[0], 0.05);
     return genSpectrum(photonEnergy, d[1], 0.02, 0.02);
@@ -110,7 +110,7 @@ var datas = d3.zip(tubePotential, etot)
 
 var plot1 = lineChart()
   .xAxisLabel("Énergie des photons (keV)")
-  .yAxisLabel("Nombre de photons (x 10¹⁴)");
+  .yAxisLabel("Nombre de photons (x 10¹²)");
 datas.slice(0, 3).map(function(d) {
   d3.select("#figure1")
     .data([d])
@@ -118,7 +118,7 @@ datas.slice(0, 3).map(function(d) {
 });
 var plot2 = lineChart()
   .xAxisLabel("Énergie des photons (keV)")
-  .yAxisLabel("Nombre de photons (x 10¹⁴)");
+  .yAxisLabel("Nombre de photons (x 10¹²)");
 datas.slice(3, 6).map(function(d) {
   d3.select("#figure2")
     .data([d])

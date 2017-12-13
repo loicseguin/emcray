@@ -1,4 +1,10 @@
-var electronChargeMantissa = 1.602 / 100;
+// In this simulation, the X ray beam has a cross-sectional area of 1 m^2 and
+// the exposure time is 1 s. Hence, beam intensity and beam energy are
+// equivalent (I = E / (St)). All subsequent calculations are done by
+// considering that beam energy is used.
+//
+
+var electronChargeMantissa = 1.602 / 10000;
 
 function normalPDF(x, mu, sigma) {
     // Evaluate the probability density function at `x` for a normal
@@ -74,28 +80,27 @@ function noiseSpectrum(photonEnergy, noiseSD) {
     return nbPhotons;
 }
 
-function genSpectrum(photonEnergy, Etot, charStrength, noiseSD) {
-    // Compute a spectrum for the given photon energies. The total energy of
-    // the spectrum in **joules** is `Etot`.The proportion of characteristic
-    // radiation in the total radiation is `charStrength`. For
-    // instance, a value of 0.01 for `charStrength` means that the number of
-    // photons from characteristic radiation is 1% of the total and the
+function genSpectrum(photonEnergy, ntot, charStrength, noiseSD) {
+    // Compute a spectrum for the given photon energies (in keV). The total
+    // number of photons in the spectrum is `ntot` times 1e12. The proportion
+    // of characteristic radiation in the total radiation is `charStrength`.
+    // For instance, a value of 0.01 for `charStrength` means that the number
+    // of photons from characteristic radiation is 1% of the total and the
     // remaining 99% is Bremsstrahlung radiation.
     //
-    // The number of photons returned is divided by 1e14.
-    if (n0 === undefined) { n0 = 100; }
+    // The number of photons returned is divided by 1e12.
     if (charStrength === undefined) { charStrength = 0.01; }
-    if (noiseSD === undefined) { noiseSD = 1; }
+    if (noiseSD === undefined) { noiseSD = 0.02; }
 
     var nbPhotons = bremsstrahlungSpectrum(photonEnergy);
     var charSpec = characteristicSpectrum(photonEnergy);
     var noise = noiseSpectrum(photonEnergy, noiseSD);
-    var eMax = photonEnergy[photonEnergy.length - 1];
-    var n0 = 2 * Etot / (eMax * electronChargeMantissa);
-    var norm = n0 / nbPhotons[0];
+    //var eMax = photonEnergy[photonEnergy.length - 1];
+    //var n0 = 2 * Etot / (eMax * electronChargeMantissa);
+    //var norm = n0 / nbPhotons[0];
     var bremStrength = 1 - charStrength
-    nbPhotons = nbPhotons.map(function(n, i) {
-        var n = norm * (bremStrength * n + charStrength * charSpec[i]) + noise[i];
+    nbPhotons = nbPhotons.map(function(d, i) {
+        var n = ntot * (bremStrength * d + charStrength * charSpec[i]) + noise[i];
         return d3.max([0, n]);
     });
     return d3.zip(photonEnergy, nbPhotons);
@@ -103,16 +108,32 @@ function genSpectrum(photonEnergy, Etot, charStrength, noiseSD) {
 
 
 function meanEnergy(spectrum) {
-    // Compute the mean energy in the given spectrum.
+    // Compute the mean energy in keV for the given spectrum.
     var totalEnergy = d3.sum(spectrum, function(d) { return d[0] * d[1]; });
     var totalPhotons = d3.sum(spectrum, function(d) { return d[1]; });
     return totalEnergy / totalPhotons;
 }
 
 
-function totalIntensity(spectrum) {
-    // Compute the total intensity of the given spectrum in W/m^2.
-    var dE = spectrum[1][0] - spectrum[0][0];
-    var totalPhotons = d3.sum(spectrum, function(d) { return d[1]; });
-    return totalPhotons * dE * electronChargeMantissa;
+function totalEnergy(spectrum) {
+    // Compute the total energy of the given spectrum in J (can also be
+    // interpreted as an intensity in W/m^2).
+    var totalEnergy = d3.sum(spectrum, function(d) { return d[0] * d[1]; });
+    return totalEnergy * electronChargeMantissa;
+}
+
+
+function totalPhotons(spectrum) {
+    // Compute the total number of photons in the spectrum (divided by 1e12).
+    return d3.sum(spectrum, function(d) { return d[1]; });
+}
+
+
+function mAsToNphotons(mAs) {
+    // Convert a tube charge into a number of photons. We use a very simple
+    // model where 1% of tube electrons are converted into X rays and 1% of
+    // produced X rays are able to exit the tube.
+    //
+    // The number of photons returned is divided by 1e12.
+    return 1e-4 * mAs / electronChargeMantissa;
 }

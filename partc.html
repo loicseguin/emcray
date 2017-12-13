@@ -59,21 +59,21 @@
       <script>
 var plot = lineChart()
   .xAxisLabel("Énergie des photons (keV)")
-  .yAxisLabel("Nombre de photons (x 10¹⁴)");
+  .yAxisLabel("Nombre de photons (x 10¹²)");
 
 var draw = greyscaleDrawing();
 
-var anodeDepth = 3;  // in µm
-var anodeAngle = 30;  // in degrees
+var anodeDepth = 6;  // in µm
+var anodeAngle = 20;  // in degrees
 var gamma = 3.0;
 var photonEnergy = d3.range(0, 80, 0.1);
-var spec = genSpectrum(photonEnergy, 1.5, 0.02, 0.01);
-var total = totalIntensity(spec);
-var maxLogIt = 0.8*Math.log10(total);  // calibrate sensor for 80 % of unfiltered spectrum
+var spec = genSpectrum(photonEnergy, 1500, 0.02, 0.01);
+var total = totalEnergy(spec);
+var maxLogE = 0.8 * Math.log10(total);  // calibrate sensor for 80 % of unfiltered spectrum
 
 var data = anodeFiltration(spec, anodeDepth * 1e-6,
   anodeAngle * Math.PI / 180);
-var curve = new sensitometricCurve(maxLogIt, 3.0, gamma);
+var curve = new sensitometricCurve(maxLogE, 3.0, gamma);
 var DOs = data[1].map(function(d) { return curve.energyToRGB(d); });
 
 d3.select("#figure1")

@@ -73,7 +73,7 @@ function anodeFiltration(spectrum, depth, anodeAngle, beamAngle) {
         spectrum.map(function(d) { return d[0]; }));
     var energies = thickness.map(function(d) {
         var spec = beerLambert(spectrum, d, muCoeffs);
-        return totalIntensity(spec);
+        return totalEnergy(spec);
     });
     var spec = beerLambert(spectrum, thicknessCenter, muCoeffs);
     return [spec, energies];
