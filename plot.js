@@ -343,5 +343,16 @@ function handDrawing() {
         });
     }
 
+    draw.pixelWidth = function(val) {
+        // Get/set label for x axis.
+        if (!arguments.length) {
+            return pixel;
+        }
+        pixel = val;
+        width = pixel * imagewidth;
+        height = pixel * imageheight;
+        return draw;
+    };
+
     return draw;
 }

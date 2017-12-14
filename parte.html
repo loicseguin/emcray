@@ -10,32 +10,32 @@
     <div class="container">
       <div id="informations">
       <h1>Simulation d'une radiographie</h1>
-      <h2>Partie E – Radiographie d'une main</h2>
-      <p><a href="partd.html">« Partie D</a> <a href="partf.html">Partie F »</a>
+      <h2>Partie E – Rayons X de basse énergie</h2>
+      <p><a href="partd.html">« Partie D</a> <a href="partf.html">Partie F »</a></p>
       <p>
-      Lorem ipsum dolor sit amet, consectetur adipisicing elit, sed do eiusmod
-      tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim
-      veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea
-      commodo consequat. Duis aute irure dolor in reprehenderit in voluptate
-      velit esse cillum dolore eu fugiat nulla pariatur. Excepteur sint
-      occaecat cupidatat non proident, sunt in culpa qui officia deserunt
-      mollit anim id est laborum.
+      La figure du haut illustre un spectre idéal et un spectre filtré dans
+      lequel les photons de basse énergie ont été éliminés. Les deux figures du bas
+      montrent deux radiographies d'une main obtenues avec les spectres du haut.
       </p>
+
+      <h3>Questions</h3>
+      <ol>
+        <li>Quelle(s) région(s) de la radiographie est(sont) affectée(s) par
+          l’utilisation du filtre.</li>
+        <li>Pour ces régions, qu’est-il arrivé aux densités optiques ?</li>
+        <li>Que pouvez-vous conclure sur l’utilité des rayons X de basses
+          énergies et sur la pertinence des filtres placés devant le fenêtre
+          des tubes à rayons X?</li>
+      </ol>
       </div>
       <div id="figures">
         <div id="figure1">
-          <h4>Radiographie d'une main</h4>
         </div>
-        <div class="controls">
-          <p>
-            <input id="kVc" type="range" min="20" max="100" step="5"
-              value="50" style="width: 120px;">
-            <span id="kVcValue"></span> kVc
-            <br>
-            <input id="mAs" type="range" min="0" max="100" step="2"
-              value="30" style="width: 120px;">
-            <span id="mAsValue"></span> mAs
-          </p>
+        <div id="figure2" style="float: left; padding-right: 30px;">
+          <h4 style="text-align: left;">Avec le spectre bleu</h4>
+        </div>
+        <div id="figure3" style="float: left;">
+          <h4 style="text-align: left;">Avec le spectre orange</h4>
         </div>
       </div>
       <script src="http://d3js.org/d3.v4.min.js"></script>
@@ -47,65 +47,53 @@
       <script src="sensitometry.js"></script>
       <script>
 
-var draw = handDrawing();
+var plot = lineChart()
+  .xAxisLabel("Énergie des photons (keV)")
+  .yAxisLabel("Nombre de photons (x 10¹⁰)");
 
-var dE = 5;  // in keV
+var draw1 = handDrawing();
+draw1.pixelWidth(2);
+var draw2 = handDrawing();
+draw2.pixelWidth(2);
+
+var dE = 0.1;  // in keV
 var anodeDepth = 3;  // in µm
 var anodeAngle = 30;  // in degrees
 var gamma = 1;
-var kVc = 50;  // in kV
-var mAs = 40;
+var kVc = 60;  // in kV
+var mAs = 50;
 var ntot = mAsToNphotons(mAs)  // convert mAs to number of photons
 var Emax = 0.15;  // arbitrarily chosen to get a reasonable contrast
 var curve = new sensitometricCurve(Math.log10(Emax), 3.0, gamma);
-var photonEnergy,
-  spec,
-  anodeFiltered,
-  specAnode,
-  transmittedI,
-  DOs;
-
-function redrawHand() {
-  photonEnergy = d3.range(0, kVc, dE);
-  spec = genSpectrum(photonEnergy, ntot, 0.02, 0.01);
-
-  anodeFiltered = anodeFiltration(spec, anodeDepth * 1e-6,
-    anodeAngle * Math.PI / 180);
-  specAnode = anodeFiltered[0];
-
-  transmittedE = getHandXray(tissues, thickness, specAnode);
-  DOs = transmittedE.map(function(row) {
+var photonEnergy = d3.range(0, kVc, dE);
+var spec = genSpectrum(photonEnergy, ntot, 0.02, 0.05);
+var anodeFiltered = anodeFiltration(spec, anodeDepth * 1e-6, anodeAngle *
+  Math.PI / 180);
+var specAnode = anodeFiltered[0];
+var transmittedEideal = getHandXray(tissues, thickness, spec);
+var DOsideal = transmittedEideal.map(function(row) {
     return row.map(function(d) { return curve.energyToRGB(d); });
   });
-  d3.select("#figure1")
-    .data([DOs])
-    .call(draw);
-}
-
-redrawHand();
-
-d3.select("#kVcValue")
-  .html(kVc);
-d3.select("#kVc")
-  .attr("value", kVc)
-  .on("input", function() {
-      kVc = +this.value;
-      redrawHand();
-      d3.select("#kVcValue")
-        .html(this.value);
+var transmittedEfiltered = getHandXray(tissues, thickness, specAnode);
+var DOsfiltered = transmittedEfiltered.map(function(row) {
+    return row.map(function(d) { return curve.energyToRGB(d); });
   });
 
-d3.select("#mAsValue")
-  .html(mAs);
-d3.select("#mAs")
-  .attr("value", mAs)
-  .on("input", function() {
-      mAs = +this.value;
-      ntot = mAsToNphotons(mAs);
-      redrawHand();
-      d3.select("#mAsValue")
-        .html(this.value);
-  });
+d3.select("#figure1")
+  .data([spec])
+  .call(plot)
+d3.select("#figure1")
+  .data([specAnode])
+  .call(plot)
+
+d3.select("#figure2")
+  .data([DOsideal])
+  .call(draw1);
+d3.select("#figure3")
+  .data([DOsfiltered])
+  .call(draw2);
+
+
       </script>
     </div>
   </body>

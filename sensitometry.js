@@ -41,3 +41,8 @@ sensitometricCurve.prototype.setGamma = function(gamma) {
     this.yIntercept = this.DO - this.gamma * this.logE;
 }
 
+function contrast(DOmin, DOmax) {
+    // Compute the contrast between two pixels where the energies incident on
+    // the detector are given.
+    return (Math.pow(10, DOmax) - Math.pow(10, DOmin)) / (Math.pow(10, DOmax) + Math.pow(10, DOmin));
+}

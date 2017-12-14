@@ -4,7 +4,7 @@
 // considering that beam energy is used.
 //
 
-var electronChargeMantissa = 1.602 / 10000;
+var electronChargeMantissa = 1.602e-6;
 
 function normalPDF(x, mu, sigma) {
     // Evaluate the probability density function at `x` for a normal
@@ -82,22 +82,19 @@ function noiseSpectrum(photonEnergy, noiseSD) {
 
 function genSpectrum(photonEnergy, ntot, charStrength, noiseSD) {
     // Compute a spectrum for the given photon energies (in keV). The total
-    // number of photons in the spectrum is `ntot` times 1e12. The proportion
+    // number of photons in the spectrum is `ntot` times 1e11. The proportion
     // of characteristic radiation in the total radiation is `charStrength`.
     // For instance, a value of 0.01 for `charStrength` means that the number
     // of photons from characteristic radiation is 1% of the total and the
     // remaining 99% is Bremsstrahlung radiation.
     //
-    // The number of photons returned is divided by 1e12.
+    // The number of photons returned is divided by 1e10.
     if (charStrength === undefined) { charStrength = 0.01; }
     if (noiseSD === undefined) { noiseSD = 0.02; }
 
     var nbPhotons = bremsstrahlungSpectrum(photonEnergy);
     var charSpec = characteristicSpectrum(photonEnergy);
     var noise = noiseSpectrum(photonEnergy, noiseSD);
-    //var eMax = photonEnergy[photonEnergy.length - 1];
-    //var n0 = 2 * Etot / (eMax * electronChargeMantissa);
-    //var norm = n0 / nbPhotons[0];
     var bremStrength = 1 - charStrength
     nbPhotons = nbPhotons.map(function(d, i) {
         var n = ntot * (bremStrength * d + charStrength * charSpec[i]) + noise[i];
@@ -124,7 +121,7 @@ function totalEnergy(spectrum) {
 
 
 function totalPhotons(spectrum) {
-    // Compute the total number of photons in the spectrum (divided by 1e12).
+    // Compute the total number of photons in the spectrum (divided by 1e10).
     return d3.sum(spectrum, function(d) { return d[1]; });
 }
 
@@ -134,6 +131,16 @@ function mAsToNphotons(mAs) {
     // model where 1% of tube electrons are converted into X rays and 1% of
     // produced X rays are able to exit the tube.
     //
-    // The number of photons returned is divided by 1e12.
+    // The number of photons returned is divided by 1e10.
     return 1e-4 * mAs / electronChargeMantissa;
+}
+
+
+function nphotonsTomAs(n) {
+    // Convert a number of photons into a  tube charge. We use a very simple
+    // model where 1% of tube electrons are converted into X rays and 1% of
+    // produced X rays are able to exit the tube.
+    //
+    // The given number of photons is divided by 1e10.
+    return 1e4 * n * electronChargeMantissa;
 }

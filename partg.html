@@ -1,0 +1,156 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width" />
+    <title>Simulation d'une radiographie – Partie G</title>
+    <link rel="stylesheet" type="text/css" href="style.css" />
+  </head>
+  <body>
+    <div class="container">
+      <div id="informations">
+      <h1>Simulation d'une radiographie</h1>
+      <h2>Partie G – Effet des kVc sur une radiographie</h2>
+      <p><a href="partf.html">« Partie F</a> <a href="parth.html">Partie H »</a></p>
+      <p>
+      Les spectres illustrés ci-contre ont été obtenus avec des valeurs de mAs
+      différentes. Ils ont été produits en plaçant un filtre d'aluminium devant
+      la fenêtre du tube de sorte à bloquer les rayons X de basse énergie. Les
+      radiographies de la main d'un patient illustrées sous le graphique ont
+      été obtenues avec le même récepteur calibré de la même façon (même courbe
+      sensitométrique).
+      </p>
+      <p>
+      Le tableau ci-dessous montre les contrastes de chacune des radiographies.
+      Le contraste global est le contraste entre un pixel entre les doigts et
+      un pixel au centre d'un os. Le contraste local est le contraste entre un
+      pixel dans la fracture à l'annulaire et un pixel dans l'os avoisinant.
+      </p>
+
+      <table>
+        <tr>
+          <th>Spectre</th><th>mAs</th><th>Contraste global</th><th>Contraste local</th><th>Intensité totale (W/m<sup>2</sup>)</th>
+        </tr>
+        <tr>
+          <td>Bleu</td><td id="ma1"></td><td id="cg1"></td><td id="cl1"></td><td id="e1"></td>
+        </tr>
+        <tr>
+          <td>Orange</td><td id="ma2"></td><td id="cg2"></td><td id="cl2"></td><td id="e2"></td>
+        </tr>
+        <tr>
+          <td>Vert</td><td id="ma3"></td><td id="cg3"></td><td id="cl3"></td><td id="e3"></td>
+        </tr>
+      </table>
+
+      <h3>Questions</h3>
+
+      <ol>
+        <li>Pour obtenir les spectres illustrés, nous avons fait varier les mAs
+          et nous constatons que l’intensité totale en est affectée. Comment
+          l’augmentation des mAs affecte-t-elle l’intensité totale du faisceau
+          de rayons X ?</li>
+        <li>Quel est l’effet d’une augmentation des mAs sur l’ensemble des
+          densités optiques des différents pixels et sur le contraste global ?</li>
+        <li>En vous basant sur votre réponse à la question précédente,
+          devrions-nous choisir de grandes valeurs ou de petites valeurs de mAs
+          pour le bien du patient ?</li>
+      </ol>
+
+      </div>
+      <div id="figures">
+        <div id="figure1">
+          <h4>Spectres des faisceaux de rayons X</h4>
+        </div>
+        <div id="figure2" style="float: left; padding-right: 30px;">
+          <h4 style="text-align: left;">Avec le spectre bleu</h4>
+        </div>
+        <div id="figure3" style="float: left; padding-right: 30px;">
+          <h4 style="text-align: left;">Avec le spectre orange</h4>
+        </div>
+        <div id="figure4" style="float: left; padding-right: 30px;">
+          <h4 style="text-align: left;">Avec le spectre vert</h4>
+        </div>
+      </div>
+      <script src="http://d3js.org/d3.v4.min.js"></script>
+      <script src="plot.js"></script>
+      <script src="xray.js"></script>
+      <script src="filtration.js"></script>
+      <script src="attenuationcoeff.js"></script>
+      <script src="hand.js"></script>
+      <script src="sensitometry.js"></script>
+      <script>
+
+var plot = lineChart()
+  .xAxisLabel("Énergie des photons (keV)")
+  .yAxisLabel("Nombre de photons (x 10¹⁰)");
+
+var drawings = [handDrawing(), handDrawing(), handDrawing()];
+drawings.map(function(d) { d.pixelWidth(2); });
+
+// Spectrum parameters
+var dE = 0.2;  // in keV
+var kVc = 60;
+var photonEnergy = d3.range(0, kVc, dE);
+var mAs = [30, 50, 70];
+var ntot = mAs.map(mAsToNphotons);  // convert mAs to number of photons
+
+// Anode and filter parameters
+var anodeDepth = 3;  // in µm
+var anodeAngle = 30;  // in degrees
+var allAlCoeffs = allAttenuationCoeffs(muAluminium, photonEnergy);
+
+// Sensitometric curve parameters
+var gamma = 1;
+var Emax = 0.05;  // energy that corresponds to a DO of 3.0
+var curve = new sensitometricCurve(Math.log10(Emax), 3.0, gamma);
+
+// Surface area of the exposed region is 15 cm x 15 cm.
+var surface = 15e-2 * 15e-2;
+
+ntot.map(function(n, i) {
+  var spec = genSpectrum(photonEnergy, n, 0.02, 0.1);
+  var anodeFiltered = anodeFiltration(spec, anodeDepth * 1e-6,
+    anodeAngle * Math.PI / 180);
+  var specAnode = anodeFiltered[0];
+  var specFiltered = beerLambert(specAnode, 1e-3, allAlCoeffs);
+
+  var transmittedE = getHandXray(tissues, thickness, specFiltered);
+  var DOs = transmittedE.map(function(row) {
+    return row.map(function(d) { return curve.energyToDO(d); });
+  });
+  var rgbs = DOs.map(function(row) {
+    return row.map(function(d) { return curve.DOToRGB(d); });
+  });
+
+  // Fill data table
+  d3.select("#ma" + (i + 1)).html(mAs[i].toPrecision(3));
+
+  // Intensity with surface area of 15cm x 15 cm and exposure time of 1 s
+  var energy = totalEnergy(specFiltered);
+  var intensity = energy / surface;
+  d3.select("#e" + (i + 1)).html(intensity.toPrecision(3));
+
+  // Global contrast
+  var DOmax = DOs[20][10];
+  var DOmin = DOs[39][50];
+  d3.select("#cg" + (i + 1))
+    .html(contrast(DOmin, DOmax).toPrecision(3));
+  // Local contrast between fracture and adjacent bone.
+  DOmin = DOs[40][64];
+  DOmax = DOs[50][64];
+  d3.select("#cl" + (i + 1))
+    .html(contrast(DOmin, DOmax).toPrecision(3));
+
+  // Update figures
+  d3.select("#figure1")
+    .data([specFiltered])
+    .call(plot);
+  d3.select("#figure" + (i + 2))
+    .data([rgbs])
+    .call(drawings[i]);
+});
+
+      </script>
+    </div>
+  </body>
+</html>

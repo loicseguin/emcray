@@ -1,0 +1,289 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width" />
+    <title>Simulation d'une radiographie</title>
+    <link rel="stylesheet" type="text/css" href="style.css" />
+  </head>
+  <body>
+    <div class="container">
+      <h1>Simulation d'une radiographie</h1>
+      <div id="informations">
+      <div id="figure0">
+          <h4 style="text-align: left;">Spectre du faiseau de rayons X</h4>
+      </div>
+
+      <h4 style="text-align: left;">Caractéristiques du faisceau et de la
+        radiographie</h4>
+      <table>
+        <tr>
+          <td>Intensité totale</td><td id="it"></td>
+        </tr>
+        <tr>
+          <td>Énergie moyenne</td><td id="em"></td>
+        </tr>
+        <tr>
+          <td>Contraste global</td><td id="cg"></td>
+        </tr>
+        <tr>
+          <td>Contraste local</td><td id="cl"></td>
+        </tr>
+      </table>
+
+      </div>
+      <div id="figures">
+        <div id="figure1">
+          <h4 style="text-align: left;">Radiographie d'une main</h4>
+        </div>
+        <div class="controls">
+          <h4 style="text-align: left;">Contrôles</h4>
+          <p>
+            <input id="kVc" type="range" min="20" max="100" step="5"
+              style="width: 120px;">
+            <span id="kVcValue"></span> kVc
+            <br>
+            <input id="mAs" type="range" min="0" max="100" step="2"
+              style="width: 120px;">
+            <span id="mAsValue"></span> mAs
+          </p>
+          <h4 style="text-align: left;">Filtre</h4>
+          <p>
+          <input type="radio" id="Alchoice" name="material" value="aluminium"
+          checked>
+          <label for="Alchoice">Aluminium</label>
+
+          <input type="radio" id="Cuchoice" name="material" value="copper">
+          <label for="Cuchoice">Cuivre</label>
+
+          <input type="radio" id="Wchoice" name="material" value="tungsten">
+          <label for="Wchoice">Tungstène</label>
+          <br />
+          <input id="thickness" type="range" min="0" max="3000" step="10"
+            style="width: 120px;">
+          Épaisseur du filtre : <span id="thicknessValue"></span>
+          </p>
+          <h4 style="text-align: left;">Courbe sensitométrique</h4>
+          <p>
+            <input id="gamma" type="range" min="0.5" max="3" step="0.1"
+              style="width: 120px;">
+            Gamma : <span id="gammaValue"></span>
+          </p>
+        </div>
+      </div>
+      <script src="http://d3js.org/d3.v4.min.js"></script>
+      <script src="plot.js"></script>
+      <script src="xray.js"></script>
+      <script src="filtration.js"></script>
+      <script src="attenuationcoeff.js"></script>
+      <script src="hand.js"></script>
+      <script src="sensitometry.js"></script>
+      <script>
+
+var draw = handDrawing();
+var plot = lineChart()
+  .xAxisLabel("Énergie des photons (keV)")
+  .yAxisLabel("Nombre de photons (x 10¹⁰)")
+  .xdomain([0, 100])
+  .ydomain([0, 15]);
+
+// Spectrum parameters
+var dE = 0.2;  // in keV
+var kVc = 50;  // in kV
+var mAs = 60;
+var ntot = mAsToNphotons(mAs);  // convert mAs to number of photons
+var photonEnergy;
+var spec;           // ideal spectrum
+var anodeFiltered;  // energies and spectrum after anode filtration
+var specAnode;      // spectrum leaving the anode
+var specFiltered;   // spectrum leaving the filter at the tube's window
+
+// Anode parameters
+var anodeDepth = 3;  // in µm
+var anodeAngle = 30;  // in degrees
+
+// Sensitometric curve parameters
+var gamma = 1;
+var Emax = 0.05;  // arbitrarily chosen to get a reasonable contrast
+var curve = new sensitometricCurve(Math.log10(Emax), 3.0, gamma);
+var transmittedE; // energy transmitted throught the patient's hand
+var DOs;          // optical densities on sensor
+var rgbs;         // RGB values on picture
+
+// Filters
+var filterThickness = 1e-4;  // in meters
+var allAlCoeffs;
+var allWCoeffs;
+var allCuCoeffs;
+var specFiltered;
+var allCoeffs;
+
+// Surface area of 15 cm x 15 cm.
+var surface = 15e-2 * 15e-2
+
+function changeMaterial() {
+    material = d3.select("input[name='material']:checked").node().value;
+    switch(material) {
+        case "aluminium":
+          allCoeffs = allAlCoeffs;
+          break;
+        case "copper":
+          allCoeffs = allCuCoeffs;
+          break;
+        case "tungsten":
+          allCoeffs = allWCoeffs;
+          break;
+        default:
+          allCoeffs = allAlCoeffs;
+          break;
+    }
+}
+
+function changeFilter() {
+  specFiltered = beerLambert(specAnode, filterThickness, allCoeffs);
+  transmittedE = getHandXray(tissues, thickness, specFiltered);
+}
+
+function changeSpectrum() {
+  spec = genSpectrum(photonEnergy, ntot, 0.02, 0.1);
+
+  anodeFiltered = anodeFiltration(spec, anodeDepth * 1e-6,
+    anodeAngle * Math.PI / 180);
+  specAnode = anodeFiltered[0];
+  changeFilter();
+}
+
+function changePhotonEnergy() {
+  photonEnergy = d3.range(0, kVc, dE);
+  allAlCoeffs = allAttenuationCoeffs(muAluminium, photonEnergy);
+  allWCoeffs = allAttenuationCoeffs(muTungsten, photonEnergy);
+  allCuCoeffs = allAttenuationCoeffs(muCopper, photonEnergy);
+  changeMaterial();
+  changeSpectrum();
+}
+
+function updateCharacteristics() {
+  // Total intensity
+  d3.select("#it")
+    .html((totalEnergy(specFiltered) / surface).toPrecision(3)
+      + " W/m<sup>2</sup>");
+
+  // Mean energy
+  d3.select("#em")
+    .html(meanEnergy(specFiltered).toPrecision(3) + " keV");
+
+  // Global contrast
+  var DOmax = DOs[20][10];
+  var DOmin = DOs[39][50];
+  d3.select("#cg")
+    .html(contrast(DOmin, DOmax).toPrecision(3));
+
+  // Local contrast between fracture and adjacent bone.
+  DOmin = DOs[40][64];
+  DOmax = DOs[50][64];
+  d3.select("#cl")
+    .html(contrast(DOmin, DOmax).toPrecision(3));
+}
+
+function redraw() {
+  DOs = transmittedE.map(function(row) {
+    return row.map(function(d) { return curve.energyToDO(d); });
+  });
+  rgbs = DOs.map(function(row) {
+    return row.map(function(d) { return curve.DOToRGB(d); });
+  });
+  plot.update(specFiltered, "#line0");
+  updateCharacteristics();
+  d3.select("#figure1")
+    .data([rgbs])
+    .call(draw);
+}
+
+changePhotonEnergy();
+
+d3.select("#figure0")
+  .data([specAnode])
+  .call(plot);
+redraw();
+
+d3.select("#kVcValue")
+  .html(kVc);
+d3.select("#kVc")
+  .attr("value", kVc)
+  .on("input", function() {
+      kVc = +this.value;
+      changePhotonEnergy();
+      redraw();
+      d3.select("#kVcValue")
+        .html(this.value);
+  });
+
+d3.select("#mAsValue")
+  .html(mAs);
+d3.select("#mAs")
+  .attr("value", mAs)
+  .on("input", function() {
+      mAs = +this.value;
+      ntot = mAsToNphotons(mAs);
+      changeSpectrum();
+      redraw();
+      d3.select("#mAsValue")
+        .html(this.value);
+  });
+
+d3.select("#thicknessValue")
+  .html(filterThickness * 1e6 + " µm");
+d3.select("#thickness")
+  .attr("value", filterThickness * 1e6)
+  .on("input", function() {
+      filterThickness = +this.value / 1e6;
+      changeFilter();
+      redraw();
+      d3.select("#thicknessValue")
+        .html(this.value + " µm");
+  });
+
+d3.selectAll("input[name='material']")
+  .on("change", function() {
+    changeMaterial();
+    changeFilter();
+    redraw();
+  });
+
+d3.select("#gammaValue")
+  .html(gamma);
+d3.select("#gamma")
+  .attr("value", gamma)
+  .on("input", function() {
+      gamma = +this.value;
+      curve.setGamma(gamma);
+      redraw();
+      d3.select("#gammaValue")
+        .html(this.value);
+  });
+
+
+
+
+// var idealMeanEnergy = meanEnergy(spec);
+// var anodeMeanEnergy = meanEnergy(specAnode);
+// var alMeanEnergy = meanEnergy(specAlFiltered);
+// var cuMeanEnergy = meanEnergy(specCuFiltered);
+// d3.select("#e1").html(idealMeanEnergy.toPrecision(3));
+// d3.select("#e2").html(anodeMeanEnergy.toPrecision(3));
+// d3.select("#e3").html(alMeanEnergy.toPrecision(3));
+// d3.select("#e4").html(cuMeanEnergy.toPrecision(3));
+// 
+// var idealTotalEnergy = totalEnergy(spec);
+// var anodeTotalEnergy = totalEnergy(specAnode);
+// var alTotalEnergy = totalEnergy(specAlFiltered);
+// var cuTotalEnergy = totalEnergy(specCuFiltered);
+// d3.select("#i1").html((idealTotalEnergy / surface).toPrecision(3));
+// d3.select("#i2").html((anodeTotalEnergy / surface).toPrecision(3));
+// d3.select("#i3").html((alTotalEnergy / surface).toPrecision(3));
+// d3.select("#i4").html((cuTotalEnergy / surface).toPrecision(3));
+
+      </script>
+    </div>
+  </body>
+</html>

@@ -11,7 +11,7 @@
       <div id="informations">
       <h1>Simulation d'une radiographie</h1>
       <h2>Partie D – Filtres</h2>
-      <p><a href="partc.html">« Partie C</a> <a href="parte.html">Partie E »</a>
+      <p><a href="partc.html">« Partie C</a> <a href="parte.html">Partie E »</a></p>
       <p>
       La figure du haut montre deux spectres : en bleu on retrouve le spectre
       sortant de l'anode (et donc filtré par l'anode), en orange on retrouve le
@@ -40,6 +40,21 @@
           d'un matériau inconnu</td><td id="e4"></td><td id="i4"></td>
         </tr>
       </table>
+
+      <h3>Manipulations</h3>
+      <p>Modifiez l'épaisseur du filtre et observez l'effet sur le spectre de
+      la figure du haut. La loi de Beer-Lambert stipule que plus un filtre est
+      épais, plus le faisceau de rayons X sera atténué. Est-ce ce que vous
+      observez?</p>
+
+      <p>Pour une épaisseur donnée, faites varier le matériau qui compose le
+      filtre et observez l'effet sur le spectre. Différents matériaux ont
+      des coefficients d'atténuation linéaires différents. Que pouvez-vous dire
+      au sujet des coefficients d'atténuation linéaire de l'aluminium, du
+      cuivre et du tungstène en vous basant sur vos observations?</p>
+
+
+      <h3>Questions</h3>
       <p>
       Voici une liste de quelques coefficients d'atténuation linéaires
       pour une énergie de rayons X de 30 keV.
@@ -59,6 +74,19 @@
         <td>Tungstène</td><td id="wmu">43755.250000</td>
       </tr>
       </table>
+
+      <p>Répondez aux questions suivantes en vous servant des données des tableaux
+      et du graphique du bas au besoin.</p>
+      <ol>
+        <li>Qu’est-ce qui explique que les filtres font augmenter l’énergie
+          moyenne des rayons X d’un spectre d’émission?</li>
+        <li>Le premier filtre utilisé est en aluminium. Quelle est l’épaisseur
+          de ce filtre ?</li>
+        <li>Le deuxième filtre a une épaisseur 10 fois plus petite que celle du
+          premier filtre. De quel matériau ce deuxième filtre est-il fait ?</li>
+        <li>Trouvez l’intensité des rayons X absorbée par le premier filtre et
+          par le deuxième filtre.</li>
+      </ol>
       </div>
       <div id="figures">
         <div id="figure1">
@@ -93,10 +121,10 @@
       <script>
 var plot1 = lineChart()
   .xAxisLabel("Énergie des photons (keV)")
-  .yAxisLabel("Nombre de photons (x 10¹²)");
+  .yAxisLabel("Nombre de photons (x 10¹⁰)");
 var plot2 = lineChart()
   .xAxisLabel("Énergie des photons (keV)")
-  .yAxisLabel("Nombre de photons (x 10¹²)");
+  .yAxisLabel("Nombre de photons (x 10¹⁰)");
 
 var thickness = 100e-6;
 var photonEnergy = d3.range(0, 80, 0.1);
@@ -108,6 +136,7 @@ var allWCoeffs = allAttenuationCoeffs(muTungsten, photonEnergy);
 var allCuCoeffs = allAttenuationCoeffs(muCopper, photonEnergy);
 var specFiltered = beerLambert(specAnode, thickness, allAlCoeffs);
 var allCoeffs = allAlCoeffs;
+var surface = 15e-2 * 15e-2  // surface area of 15 cm x 15 cm.
 
 d3.select("#figure1")
   .data([specAnode])
@@ -177,10 +206,10 @@ var idealTotalEnergy = totalEnergy(spec);
 var anodeTotalEnergy = totalEnergy(specAnode);
 var alTotalEnergy = totalEnergy(specAlFiltered);
 var cuTotalEnergy = totalEnergy(specCuFiltered);
-d3.select("#i1").html(idealTotalEnergy.toPrecision(3));
-d3.select("#i2").html(anodeTotalEnergy.toPrecision(3));
-d3.select("#i3").html(alTotalEnergy.toPrecision(3));
-d3.select("#i4").html(cuTotalEnergy.toPrecision(3));
+d3.select("#i1").html((idealTotalEnergy / surface).toPrecision(3));
+d3.select("#i2").html((anodeTotalEnergy / surface).toPrecision(3));
+d3.select("#i3").html((alTotalEnergy / surface).toPrecision(3));
+d3.select("#i4").html((cuTotalEnergy / surface).toPrecision(3));
 
 d3.select("#almu").html(findAttenuation(muAluminium, 30).toFixed(0));
 d3.select("#cumu").html(findAttenuation(muCopper, 30).toFixed(0));

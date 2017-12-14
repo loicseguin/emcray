@@ -11,7 +11,7 @@
       <div id="informations">
       <h1>Simulation d'une radiographie</h1>
       <h2>Partie C – Effet talon</h2>
-      <p><a href="partb.html">« Partie B</a> <a href="partd.html">Partie D »</a>
+      <p><a href="partb.html">« Partie B</a> <a href="partd.html">Partie D »</a></p>
       <p>
       Supposons que la différence de potentiel entre les bornes du tube a
       rayons X est de 80,0 kV. La figure du haut illustre l'allure de la
@@ -26,6 +26,30 @@
       profondeur de pénétration des électrons de bombardement dans l'anode,
       l'angle de l'anode et le gamma du récepteur des rayons X.
       </p>
+
+      <h3>Manipulations</h3>
+      Modifiez les paramètres de l'anode et le facteur gamma et observez
+      l'effet sur la radiographie de même que sur les spectres. Pour quelles
+      valeurs des paramètres l'effet talon est-il le plus important? Pour
+      quelles valeurs est-il le moins important?
+
+      <h3>Questions</h3>
+      <p>Pour répondre aux questions suivantes, placez la pénétration dans
+      l'anode à 6 µm, l'angle de l'anode à 20° et la valeur de gamma à 3.</p>
+      <ol>
+        <li>À quoi est dû l’effet talon ?</li>
+        <li>Pour la figure du haut, indiquez des valeurs plausibles de la
+          densité optique à gauche de l’image et à droite de l’image.
+        <li>Si vous vous fiez à la figure du haut, de quel côté est l’anode
+          (droite ou gauche) ?</li>
+        <li>Intéressons-nous à la figure du bas.
+          <ol type="a">
+            <li>Quel spectre représente adéquatement les rayons X qui se
+              dirigent vers la fenêtre du tube à rayons X (rouge ou bleu) ?</li>
+            <li>Pour quelles énergies les différences entre le nombre de
+              photons des deux spectres sont-elles les plus importantes ?</li>
+          </ol>
+      </ol>
       </div>
       <div id="figures">
         <div id="figure1">
@@ -59,7 +83,7 @@
       <script>
 var plot = lineChart()
   .xAxisLabel("Énergie des photons (keV)")
-  .yAxisLabel("Nombre de photons (x 10¹²)");
+  .yAxisLabel("Nombre de photons (x 10¹⁰)");
 
 var draw = greyscaleDrawing();
 
@@ -69,7 +93,7 @@ var gamma = 3.0;
 var photonEnergy = d3.range(0, 80, 0.1);
 var spec = genSpectrum(photonEnergy, 1500, 0.02, 0.01);
 var total = totalEnergy(spec);
-var maxLogE = 0.8 * Math.log10(total);  // calibrate sensor for 80 % of unfiltered spectrum
+var maxLogE = Math.log10(total);  // calibrate sensor
 
 var data = anodeFiltration(spec, anodeDepth * 1e-6,
   anodeAngle * Math.PI / 180);
