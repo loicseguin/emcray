@@ -39,7 +39,7 @@ sensitometricCurve.prototype.energyToRGB = function(energy) {
 sensitometricCurve.prototype.setGamma = function(gamma) {
     this.gamma = gamma;
     this.yIntercept = this.DO - this.gamma * this.logE;
-}
+};
 
 function contrast(DOmin, DOmax) {
     // Compute the contrast between two pixels where the energies incident on

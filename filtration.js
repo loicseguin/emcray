@@ -1,3 +1,5 @@
+"use strict";
+
 var exp = Math.exp;
 var log = Math.log;
 var tan = Math.tan;
@@ -18,9 +20,12 @@ function beerLambert(spectrum, thickness, attenuationCoeffs) {
     //
     var n = spectrum.length;
     var filtered = new Array(n);
-    for (var i = 0; i < n; i++) {
-        filtered[i] = [spectrum[i][0],
-            spectrum[i][1] * exp(-attenuationCoeffs[i] * thickness)];
+    var i;
+    for (i = 0; i < n; i++) {
+        filtered[i] = [
+            spectrum[i][0],
+            spectrum[i][1] * exp(-attenuationCoeffs[i] * thickness)
+        ];
     }
     return filtered;
 }
@@ -41,7 +46,7 @@ function beerLambertEnergy(spectrum, thickness, attenuationCoeffs) {
     //     `attenuationCoeffs`: attenuation coefficients in inverse meters
     //         (m^{-1}). Length must match that of nbPhotons.
     //
-    return electronChargeMantissa * d3.sum(spectrum, function(d, i) {
+    return electronChargeMantissa * d3.sum(spectrum, function (d, i) {
         return d[0] * d[1] * exp(-attenuationCoeffs[i] * thickness);
     });
 
@@ -52,7 +57,9 @@ function findAttenuation(coeffs, energy) {
     // find the attenuation coefficient for the given energy. Exponential
     // interpolation is used. `coeffs` must be a list of energy (in keV),
     // attenuation coefficient pairs.
-    var index = coeffs.findIndex(function(d) { return d[0] > energy; });
+    var index = coeffs.findIndex(function (d) {
+        return d[0] > energy;
+    });
     if (index < 0) {
         // Energy is too high. Give something reasonable.
         return 100 * coeffs[coeffs.length - 1][1];
@@ -74,7 +81,8 @@ function allAttenuationCoeffs(coeffs, energies) {
     // based on the provided attenuation coeffs data.
     var n = energies.length;
     var allCoeffs = new Array(n);
-    for (var i = 0; i < n; i++) {
+    var i;
+    for (i = 0; i < n; i++) {
         allCoeffs[i] = findAttenuation(coeffs, energies[i]);
     }
     return allCoeffs;
@@ -89,22 +97,30 @@ function anodeFiltration(spectrum, depth, anodeAngle, beamAngle) {
     // This function returns the spectrum at the center of the beam as well as
     // an array of energies (in J) along the anode-cathode axis.
 
-    if (depth === undefined) { depth = 1e-6; }
-    if (anodeAngle === undefined) { anodeAngle = 45 * Math.PI / 180; }
-    if (beamAngle === undefined) { beamAngle = 15 * Math.PI / 180; }
+    if (depth === undefined) {
+        depth = 1e-6;
+    }
+    if (anodeAngle === undefined) {
+        anodeAngle = 45 * Math.PI / 180;
+    }
+    if (beamAngle === undefined) {
+        beamAngle = 15 * Math.PI / 180;
+    }
 
     // Linear span of angles accross the X ray beam.
     var nAngle = 80;
     var dAngle = 2 * beamAngle / nAngle;
     var alpha = d3.range(-beamAngle, beamAngle, dAngle);
     // Thickness of anode for X rays through each angle.
-    var thickness = alpha.map(function(d) {
+    var thickness = alpha.map(function (d) {
         return depth * Math.cos(anodeAngle) / Math.sin(anodeAngle + d);
     });
-    var thicknessCenter = thickness[Math.round((thickness.length - 1)/ 2)];
+    var thicknessCenter = thickness[Math.round((thickness.length - 1) / 2)];
     var muCoeffs = allAttenuationCoeffs(muTungsten,
-        spectrum.map(function(d) { return d[0]; }));
-    var energies = thickness.map(function(d) {
+        spectrum.map(function (d) {
+            return d[0];
+        }));
+    var energies = thickness.map(function (d) {
         var spec = beerLambert(spectrum, d, muCoeffs);
         return totalEnergy(spec);
     });
@@ -119,11 +135,17 @@ function filterByAnode(spectrum, depth, anodeAngle, muCoeffs) {
     //
     // This function returns the spectrum at the center of the beam.
 
-    if (depth === undefined) { depth = 1e-6; }
-    if (anodeAngle === undefined) { anodeAngle = 45 * Math.PI / 180; }
+    if (depth === undefined) {
+        depth = 1e-6;
+    }
+    if (anodeAngle === undefined) {
+        anodeAngle = 45 * Math.PI / 180;
+    }
     if (muCoeffs === undefined) {
-        var muCoeffs = allAttenuationCoeffs(muTungsten,
-            spectrum.map(function(d) { return d[0]; }));
+        muCoeffs = allAttenuationCoeffs(muTungsten,
+            spectrum.map(function (d) {
+                return d[0];
+            }));
     }
 
     // Thickness of anode for X rays through each angle.

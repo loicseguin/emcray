@@ -1,3 +1,5 @@
+"use strict";
+
 function lineChart() {
     var margin = {top: 10, right: 20, bottom: 40, left: 60},
         width = 500 - margin.left - margin.right,
@@ -82,8 +84,8 @@ function lineChart() {
 
             // Add the line path.
             var line = d3.line()
-                .x(function (d) { return xScale(d[0]); })
-                .y(function (d) { return yScale(d[1]); });
+                .x(function(d) { return xScale(d[0]); })
+                .y(function(d) { return yScale(d[1]); });
             var nlines = svg.selectAll(".line").size();
             g.select(".charts")
                 .append("path")
@@ -121,9 +123,9 @@ function lineChart() {
                 .enter()
                 .append("text")
                 .attr("class", "x label")
-                .attr('x', width / 2)
-                .attr('y', 35)
-                .style('text-anchor', 'middle')
+                .attr("x", width / 2)
+                .attr("y", 35)
+                .style("text-anchor", "middle")
                 .text(function(d) { return d; });
 
             // Update the y-axis.
@@ -149,10 +151,10 @@ function lineChart() {
 
     function updateLines() {
         // Redraw all lines to fit new scale.
-        g.selectAll(".line").each(function (d, i) {
+        g.selectAll(".line").each(function(d) {
             var line = d3.line()
-                .x(function (d) { return xScale(d[0]); })
-                .y(function (d) { return yScale(d[1]); });
+                .x(function(d) { return xScale(d[0]); })
+                .y(function(d) { return yScale(d[1]); });
             d3.select(this)
                 .transition()
                 .duration(1000)
@@ -261,7 +263,7 @@ function greyscaleDrawing() {
 
             var binwidth = width / data.length;
 
-            function color(d) {
+            function color (d) {
                 var rgb = Math.round(d);
                 return "rgb(" + rgb + "," + rgb + "," + rgb + ")";
             }
@@ -274,16 +276,16 @@ function greyscaleDrawing() {
                 .attr("y", 0)
                 .attr("width", binwidth)
                 .attr("height", height)
-                .attr("fill", function(d, i) { return color(d); })
-                .attr("stroke", function(d, i) { return color(d); });
+                .attr("fill", function(d) { return color(d); })
+                .attr("stroke", function(d) { return color(d); });
 
             // Update
             svg.selectAll("rect")
                 .data(data)
                 .attr("x", function(d, i) { return i * binwidth; })
                 .attr("width", binwidth)
-                .attr("fill", function(d, i) { return color(d); })
-                .attr("stroke", function(d, i) { return color(d); });
+                .attr("fill", function(d) { return color(d); })
+                .attr("stroke", function(d) { return color(d); });
 
         });
     }
@@ -294,7 +296,7 @@ function greyscaleDrawing() {
 function handDrawing () {
     var imagewidth = 90,
         imageheight = 85,
-        pixel = 3,
+        pixel = 2,
         width = pixel * imagewidth,
         height = pixel * imageheight;
 
@@ -310,7 +312,7 @@ function handDrawing () {
             canvas = canvas.merge(canvasEnter);
             canvas.attr("width", width)
                 .attr("height", height);
-            var context = canvas.node().getContext('2d');
+            var context = canvas.node().getContext("2d");
 
             function color(d) {
                 var rgb = Math.round(d);
@@ -319,8 +321,9 @@ function handDrawing () {
 
             context.clearRect(0, 0, width, height); // Clear the canvas.
 
-            for (var i = 0; i < imageheight; i++) {
-                for (var j = 0; j < imagewidth; j++) {
+            var i, j;
+            for (i = 0; i < imageheight; i++) {
+                for (j = 0; j < imagewidth; j++) {
                     context.fillStyle = color(data[i][j]);
                     context.fillRect(pixel * j, pixel * i, pixel, pixel);
                 }
