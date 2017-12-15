@@ -114,24 +114,32 @@ var allAlCoeffs = allAttenuationCoeffs(muAluminium, photonEnergy);
 var gamma = 1;
 var Emax = 0.05;  // energy that corresponds to a DO of 3.0
 var curve = new sensitometricCurve(Math.log10(Emax), 3.0, gamma);
+var handWidth = 90;
+var handHeight = 85;
+var DOs = new Array(handHeight);          // optical densities on sensor
+var rgbs = new Array(handHeight);         // RGB values on picture
+for (var i = 0; i < handHeight; i++) {
+  DOs[i] = new Array(handWidth);
+  rgbs[i] = new Array(handWidth);
+}
 
 // Surface area of the exposed region is 15 cm x 15 cm.
 var surface = 15e-2 * 15e-2;
 
 ntot.map(function(n, i) {
   var spec = genSpectrum(photonEnergy, n, 0.02, 0.1);
-  var anodeFiltered = anodeFiltration(spec, anodeDepth * 1e-6,
+  var specAnode = filterByAnode(spec, anodeDepth * 1e-6,
     anodeAngle * Math.PI / 180);
-  var specAnode = anodeFiltered[0];
   var specFiltered = beerLambert(specAnode, 1e-3, allAlCoeffs);
 
   var transmittedE = getHandXray(tissues, thickness, specFiltered);
-  var DOs = transmittedE.map(function(row) {
-    return row.map(function(d) { return curve.energyToDO(d); });
-  });
-  var rgbs = DOs.map(function(row) {
-    return row.map(function(d) { return curve.DOToRGB(d); });
-  });
+  for (var j = 0; j < handHeight; j++) {
+    for (var k = 0; k < handWidth; k++) {
+      var newDO = curve.energyToDO(transmittedE[j][k]);
+      DOs[j][k] = newDO;
+      rgbs[j][k] = curve.DOToRGB(newDO);
+    }
+  }
 
   // Fill data table
   d3.select("#ma" + (i + 1)).html(mAs[i].toPrecision(3));

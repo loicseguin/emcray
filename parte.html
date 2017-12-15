@@ -67,7 +67,7 @@ draw1.pixelWidth(2);
 var draw2 = handDrawing();
 draw2.pixelWidth(2);
 
-var dE = 0.1;  // in keV
+var dE = 0.2;  // in keV
 var anodeDepth = 3;  // in µm
 var anodeAngle = 30;  // in degrees
 var gamma = 1;
@@ -78,15 +78,14 @@ var Emax = 0.15;  // arbitrarily chosen to get a reasonable contrast
 var curve = new sensitometricCurve(Math.log10(Emax), 3.0, gamma);
 var photonEnergy = d3.range(0, kVc, dE);
 var spec = genSpectrum(photonEnergy, ntot, 0.02, 0.05);
-var anodeFiltered = anodeFiltration(spec, anodeDepth * 1e-6, anodeAngle *
+var specAnode = filterByAnode(spec, anodeDepth * 1e-6, anodeAngle *
   Math.PI / 180);
-var specAnode = anodeFiltered[0];
 var transmittedEideal = getHandXray(tissues, thickness, spec);
-var DOsideal = transmittedEideal.map(function(row) {
+var rgbsideal = transmittedEideal.map(function(row) {
     return row.map(function(d) { return curve.energyToRGB(d); });
   });
 var transmittedEfiltered = getHandXray(tissues, thickness, specAnode);
-var DOsfiltered = transmittedEfiltered.map(function(row) {
+var rgbsfiltered = transmittedEfiltered.map(function(row) {
     return row.map(function(d) { return curve.energyToRGB(d); });
   });
 
@@ -98,12 +97,11 @@ d3.select("#figure1")
   .call(plot)
 
 d3.select("#figure2")
-  .data([DOsideal])
+  .data([rgbsideal])
   .call(draw1);
 d3.select("#figure3")
-  .data([DOsfiltered])
+  .data([rgbsfiltered])
   .call(draw2);
-
 
       </script>
     </div>

@@ -1,3 +1,7 @@
+var exp = Math.exp;
+var log = Math.log;
+var tan = Math.tan;
+
 function beerLambert(spectrum, thickness, attenuationCoeffs) {
     // Filter the incoming beam according to the Beer-Lambert equation:
     //     n_t = n_i exp(-\mu L).
@@ -12,9 +16,35 @@ function beerLambert(spectrum, thickness, attenuationCoeffs) {
     //     `attenuationCoeffs`: attenuation coefficients in inverse meters
     //         (m^{-1}). Length must match that of nbPhotons.
     //
-    return spectrum.map(function(d, i) {
-        return [d[0], d[1] * Math.exp(-attenuationCoeffs[i] * thickness)];
+    var n = spectrum.length;
+    var filtered = new Array(n);
+    for (var i = 0; i < n; i++) {
+        filtered[i] = [spectrum[i][0],
+            spectrum[i][1] * exp(-attenuationCoeffs[i] * thickness)];
+    }
+    return filtered;
+}
+
+function beerLambertEnergy(spectrum, thickness, attenuationCoeffs) {
+    // Filter the incoming beam according to the Beer-Lambert equation:
+    //     n_t = n_i exp(-\mu L).
+    // Return the energy of the filtered beam.
+    //
+    // The incoming spectrum is an array where each element corresponds to a
+    // specific energy. The attenuation coefficient of the material must be
+    // specified for all energies, hence `attenuationCoeff` must be the same
+    // length as `spectrum`.
+    //
+    // Parameters:
+    //     `spectrum`: array of incoming number of photons
+    //     `thickness`: thickness of material in meters
+    //     `attenuationCoeffs`: attenuation coefficients in inverse meters
+    //         (m^{-1}). Length must match that of nbPhotons.
+    //
+    return electronChargeMantissa * d3.sum(spectrum, function(d, i) {
+        return d[0] * d[1] * exp(-attenuationCoeffs[i] * thickness);
     });
+
 }
 
 function findAttenuation(coeffs, energy) {
@@ -35,16 +65,19 @@ function findAttenuation(coeffs, energy) {
     var mu1 = coeffs[index - 1][1];
     var energy2 = coeffs[index][0];
     var mu2 = coeffs[index][1];
-    var slope = Math.log(mu2 / mu1) / Math.log(energy2 / energy1);
+    var slope = log(mu2 / mu1) / log(energy2 / energy1);
     return mu1 * (energy / energy1)**slope;
 }
 
 function allAttenuationCoeffs(coeffs, energies) {
     // Compute the attenuation coefficients by interpolation for all energies
     // based on the provided attenuation coeffs data.
-    return energies.map(function(energy) {
-        return findAttenuation(coeffs, energy);
-    });
+    var n = energies.length;
+    var allCoeffs = new Array(n);
+    for (var i = 0; i < n; i++) {
+        allCoeffs[i] = findAttenuation(coeffs, energies[i]);
+    }
+    return allCoeffs;
 }
 
 function anodeFiltration(spectrum, depth, anodeAngle, beamAngle) {
@@ -77,4 +110,24 @@ function anodeFiltration(spectrum, depth, anodeAngle, beamAngle) {
     });
     var spec = beerLambert(spectrum, thicknessCenter, muCoeffs);
     return [spec, energies];
+}
+
+function filterByAnode(spectrum, depth, anodeAngle, muCoeffs) {
+    // Filter the incoming beam when it leaves the anode. The electron beam
+    // penetrates the anode to `depth` (in meters). The anode has an angle at
+    // the tip `anodeAngle`. Angle should be in radians.
+    //
+    // This function returns the spectrum at the center of the beam.
+
+    if (depth === undefined) { depth = 1e-6; }
+    if (anodeAngle === undefined) { anodeAngle = 45 * Math.PI / 180; }
+    if (muCoeffs === undefined) {
+        var muCoeffs = allAttenuationCoeffs(muTungsten,
+            spectrum.map(function(d) { return d[0]; }));
+    }
+
+    // Thickness of anode for X rays through each angle.
+    var thickness = depth / tan(anodeAngle);
+    var spec = beerLambert(spectrum, thickness, muCoeffs);
+    return spec;
 }

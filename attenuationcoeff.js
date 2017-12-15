@@ -376,8 +376,11 @@ var muAluminium = [
 muAluminium = convertMu(muAluminium, rhoAluminium);
 
 function convertMu(muData, rho) {
-// Convert energy to keV and attenuation coefficient to m^-1.
-    return muData.map(function(d) {
-        return [1000 * d[0], 100 * rho * d[1]];
-    });
+    // Convert energy to keV and attenuation coefficient to m^-1.
+    var n = muData.length;
+    var converted = new Array(n);
+    for (var i = 0; i < n; i++) {
+        converted[i] = [1000 * muData[i][0], 100 * rho * muData[i][1]];
+    }
+    return converted;
 }

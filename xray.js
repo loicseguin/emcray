@@ -33,24 +33,27 @@ function characteristicSpectrum(photonEnergy) {
     var dE = photonEnergy[1] - photonEnergy[0];
 
     // Determine which lines are in the given energy interval.
-    var eMax = photonEnergy[photonEnergy.length - 1];
+    var n = photonEnergy.length;
+    var eMax = photonEnergy[n - 1];
     var index = lineEnergy.findIndex(function (d) { return d > eMax; });
     if (index < 0) {
         // All lines are included.
-        index = photonEnergy.length;
+        index = lineEnergy.length;
     } else {
         index = index;
     }
 
     var norm = dE / d3.sum(relativeIntensity.slice(0, index));
-    var lineInfo = d3.zip(lineEnergy.slice(0, index),
-        lineWidth.slice(0, index),
-        relativeIntensity.slice(0, index));
-    var nbPhotons = photonEnergy.map(function(d) {
-        return norm * d3.sum(lineInfo.map(function(info) {
-            return info[2] * normalPDF(d, info[0], info[1] / 4);
-        }));
-    });
+    var nbPhotons = new Array(n);
+    for (var i = 0; i < n; i++) {
+        var energy = photonEnergy[i];
+        var linesn = new Array(index);
+        for (var j = 0; j < index; j++) {
+            var pdf = normalPDF(energy, lineEnergy[j], lineWidth[j] / 4);
+            linesn[j] = relativeIntensity[j] * pdf;
+        }
+        nbPhotons[i] = norm * d3.sum(linesn);
+    }
     return nbPhotons;
 }
 
@@ -58,15 +61,17 @@ function bremsstrahlungSpectrum(photonEnergy) {
     // Compute Bremsstrahlung spectrum for the given photon energies. The
     // maximum energy is considered to be the last value in `photonEnergy`.
     // Spectrum is normalized so that the total number of photons is 1.
-    var eMax = photonEnergy[photonEnergy.length - 1];
+    var n = photonEnergy.length;
+    var eMax = photonEnergy[n - 1];
     var dE = photonEnergy[1] - photonEnergy[0];
 
     // Number of photons.
     var n0 = 2 * dE / eMax;
     var slope = -n0 / eMax;
-    var nbPhotons = photonEnergy.map(function(d) {
-        return n0 + slope * d; 
-    });
+    var nbPhotons = new Array(n);
+    for (var i = 0; i < n; i++) {
+        nbPhotons[i] = n0 + slope * photonEnergy[i]; 
+    }
 
     return nbPhotons;
 }
@@ -74,9 +79,11 @@ function bremsstrahlungSpectrum(photonEnergy) {
 function noiseSpectrum(photonEnergy, noiseSD) {
     // Generate gaussian noise with mean 0 and standard deviation `noiseSD`.
     if (noiseSD === undefined) { noiseSD = 1; }
-    var nbPhotons = photonEnergy.map(function (d) {
-         return d3.randomNormal(0, noiseSD)();
-    });
+    var n = photonEnergy.length;
+    var nbPhotons = new Array(n);
+    for (var i = 0; i < n; i++) {
+        nbPhotons[i] = d3.randomNormal(0, noiseSD)();
+    }
     return nbPhotons;
 }
 
@@ -95,11 +102,12 @@ function genSpectrum(photonEnergy, ntot, charStrength, noiseSD) {
     var nbPhotons = bremsstrahlungSpectrum(photonEnergy);
     var charSpec = characteristicSpectrum(photonEnergy);
     var noise = noiseSpectrum(photonEnergy, noiseSD);
-    var bremStrength = 1 - charStrength
-    nbPhotons = nbPhotons.map(function(d, i) {
-        var n = ntot * (bremStrength * d + charStrength * charSpec[i]) + noise[i];
-        return d3.max([0, n]);
-    });
+    var bremStrength = 1 - charStrength;
+    var n = photonEnergy.length;
+    for (var i = 0; i < n; i++) {
+        nbPhotons[i] = ntot * (bremStrength * nbPhotons[i] + charStrength * charSpec[i]) + noise[i];
+        nbPhotons[i] = d3.max([0, nbPhotons[i]]);
+    }
     return d3.zip(photonEnergy, nbPhotons);
 }
 

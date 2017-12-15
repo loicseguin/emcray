@@ -101,38 +101,48 @@ var plot = lineChart()
   .ydomain([0, 15]);
 
 // Spectrum parameters
-var dE = 0.2;  // in keV
+var nE = 200;  // in keV
 var kVc = 50;  // in kV
+var dE = kVc / nE;
 var mAs = 60;
 var ntot = mAsToNphotons(mAs);  // convert mAs to number of photons
-var photonEnergy;
-var spec;           // ideal spectrum
-var anodeFiltered;  // energies and spectrum after anode filtration
-var specAnode;      // spectrum leaving the anode
-var specFiltered;   // spectrum leaving the filter at the tube's window
+var photonEnergy = new Array(nE);
+var spec = new Array(nE);           // ideal spectrum
+var specAnode = new Array(nE);      // spectrum leaving the anode
+var specFiltered = new Array(nE);   // spectrum leaving the filter at the tube's window
 
 // Anode parameters
-var anodeDepth = 3;  // in µm
-var anodeAngle = 30;  // in degrees
+var anodeDepth = 3e-6;  // in µm
+var anodeAngle = 30.0 * Math.PI / 180.0;  // in degrees
 
 // Sensitometric curve parameters
-var gamma = 1;
+var gamma = 1.0;
 var Emax = 0.05;  // arbitrarily chosen to get a reasonable contrast
 var curve = new sensitometricCurve(Math.log10(Emax), 3.0, gamma);
-var transmittedE; // energy transmitted throught the patient's hand
-var DOs;          // optical densities on sensor
-var rgbs;         // RGB values on picture
+var transmittedE = new Array(nE); // energy transmitted through the patient's hand
+var handWidth = 90;
+var handHeight = 85;
+var DOs = new Array(handHeight);          // optical densities on sensor
+var rgbs = new Array(handHeight);         // RGB values on picture
+for (var i = 0; i < handHeight; i++) {
+  DOs[i] = new Array(handWidth);
+  rgbs[i] = new Array(handWidth);
+}
 
 // Filters
 var filterThickness = 1e-4;  // in meters
-var allAlCoeffs;
-var allWCoeffs;
-var allCuCoeffs;
-var specFiltered;
-var allCoeffs;
+var allAlCoeffs = new Array(nE);
+var allWCoeffs = new Array(nE);
+var allCuCoeffs = new Array(nE);
+var specFiltered = new Array(nE);
+var allCoeffs = new Array(nE);
+var boneCoeffs = new Array(nE);
+var softCoeffs = new Array(nE);
+var fractureCoeffs = new Array(nE);
+var emptyCoeffs = new Array(nE);
 
 // Surface area of 15 cm x 15 cm.
-var surface = 15e-2 * 15e-2
+var surface = 15e-2 * 15e-2;
 
 function changeMaterial() {
     material = d3.select("input[name='material']:checked").node().value;
@@ -160,17 +170,22 @@ function changeFilter() {
 function changeSpectrum() {
   spec = genSpectrum(photonEnergy, ntot, 0.02, 0.1);
 
-  anodeFiltered = anodeFiltration(spec, anodeDepth * 1e-6,
-    anodeAngle * Math.PI / 180);
-  specAnode = anodeFiltered[0];
+  specAnode = filterByAnode(spec, anodeDepth, anodeAngle, allWCoeffs);
   changeFilter();
 }
 
 function changePhotonEnergy() {
+  dE = kVc / nE;
   photonEnergy = d3.range(0, kVc, dE);
+
   allAlCoeffs = allAttenuationCoeffs(muAluminium, photonEnergy);
   allWCoeffs = allAttenuationCoeffs(muTungsten, photonEnergy);
   allCuCoeffs = allAttenuationCoeffs(muCopper, photonEnergy);
+
+  boneCoeffs = allAttenuationCoeffs(muBone, photonEnergy);
+  softCoeffs = allAttenuationCoeffs(muMuscle, photonEnergy);
+  fractureCoeffs = boneCoeffs.map(function(d) { return d * 0.8; });
+
   changeMaterial();
   changeSpectrum();
 }
@@ -199,20 +214,22 @@ function updateCharacteristics() {
 }
 
 function redraw() {
-  DOs = transmittedE.map(function(row) {
-    return row.map(function(d) { return curve.energyToDO(d); });
-  });
-  rgbs = DOs.map(function(row) {
-    return row.map(function(d) { return curve.DOToRGB(d); });
-  });
+  for (var i = 0; i < handHeight; i++) {
+    for (var j = 0; j < handWidth; j++) {
+      var newDO = curve.energyToDO(transmittedE[i][j]);
+      DOs[i][j] = newDO;
+      rgbs[i][j] = curve.DOToRGB(newDO);
+    }
+  }
   plot.update(specFiltered, "#line0");
   updateCharacteristics();
   d3.select("#figure1")
-    .data([rgbs])
-    .call(draw);
+     .data([rgbs])
+     .call(draw);
 }
 
 changePhotonEnergy();
+emptyCoeffs = boneCoeffs.map(function(d) { return 0; });
 
 d3.select("#figure0")
   .data([specAnode])
@@ -274,27 +291,6 @@ d3.select("#gamma")
       d3.select("#gammaValue")
         .html(this.value);
   });
-
-
-
-
-// var idealMeanEnergy = meanEnergy(spec);
-// var anodeMeanEnergy = meanEnergy(specAnode);
-// var alMeanEnergy = meanEnergy(specAlFiltered);
-// var cuMeanEnergy = meanEnergy(specCuFiltered);
-// d3.select("#e1").html(idealMeanEnergy.toPrecision(3));
-// d3.select("#e2").html(anodeMeanEnergy.toPrecision(3));
-// d3.select("#e3").html(alMeanEnergy.toPrecision(3));
-// d3.select("#e4").html(cuMeanEnergy.toPrecision(3));
-// 
-// var idealTotalEnergy = totalEnergy(spec);
-// var anodeTotalEnergy = totalEnergy(specAnode);
-// var alTotalEnergy = totalEnergy(specAlFiltered);
-// var cuTotalEnergy = totalEnergy(specCuFiltered);
-// d3.select("#i1").html((idealTotalEnergy / surface).toPrecision(3));
-// d3.select("#i2").html((anodeTotalEnergy / surface).toPrecision(3));
-// d3.select("#i3").html((alTotalEnergy / surface).toPrecision(3));
-// d3.select("#i4").html((cuTotalEnergy / surface).toPrecision(3));
 
       </script>
     </div>

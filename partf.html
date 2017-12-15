@@ -115,14 +115,21 @@ var anodeAngle = 30;  // in degrees
 var gamma = 1;
 var Emax = 0.05;
 var curve = new sensitometricCurve(Math.log10(Emax), 3.0, gamma);
+var handWidth = 90;
+var handHeight = 85;
+var DOs = new Array(handHeight);          // optical densities on sensor
+var rgbs = new Array(handHeight);         // RGB values on picture
+for (var i = 0; i < handHeight; i++) {
+  DOs[i] = new Array(handWidth);
+  rgbs[i] = new Array(handWidth);
+}
 
 kVc.map(function(kV, i) {
   var photonEnergy = d3.range(0, kV, dE);
   var allAlCoeffs = allAttenuationCoeffs(muAluminium, photonEnergy);
   var spec = genSpectrum(photonEnergy, ntot, 0.02, 0.1);
-  var anodeFiltered = anodeFiltration(spec, anodeDepth * 1e-6,
+  var specAnode = filterByAnode(spec, anodeDepth * 1e-6,
     anodeAngle * Math.PI / 180);
-  var specAnode = anodeFiltered[0];
   var specFiltered = beerLambert(specAnode, 1e-3, allAlCoeffs);
 
   // Scale to have the same total energy.
@@ -132,12 +139,13 @@ kVc.map(function(kV, i) {
   });
 
   var transmittedE = getHandXray(tissues, thickness, specFiltered);
-  var DOs = transmittedE.map(function(row) {
-    return row.map(function(d) { return curve.energyToDO(d); });
-  });
-  var rgbs = DOs.map(function(row) {
-    return row.map(function(d) { return curve.DOToRGB(d); });
-  });
+  for (var j = 0; j < handHeight; j++) {
+    for (var k = 0; k < handWidth; k++) {
+      var newDO = curve.energyToDO(transmittedE[j][k]);
+      DOs[j][k] = newDO;
+      rgbs[j][k] = curve.DOToRGB(newDO);
+    }
+  }
 
   // Fill data table
   var energy = totalEnergy(specFiltered);
