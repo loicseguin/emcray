@@ -123,9 +123,17 @@ for (var i = 0; i < handHeight; i++) {
   DOs[i] = new Array(handWidth);
   rgbs[i] = new Array(handWidth);
 }
+var emptyCoeffs;
+var boneCoeffs;
+var softCoeffs;
+var fractureCoeffs;
 
 kVc.map(function(kV, i) {
   var photonEnergy = d3.range(0, kV, dE);
+  emptyCoeffs = new Array(photonEnergy.length).fill(0);
+  boneCoeffs = allAttenuationCoeffs(muBone, photonEnergy);
+  softCoeffs = allAttenuationCoeffs(muMuscle, photonEnergy);
+  fractureCoeffs = boneCoeffs.map(function(d) { return d * 0.8; });
   var allAlCoeffs = allAttenuationCoeffs(muAluminium, photonEnergy);
   var spec = genSpectrum(photonEnergy, ntot, 0.02, 0.1);
   var specAnode = filterByAnode(spec, anodeDepth * 1e-6,

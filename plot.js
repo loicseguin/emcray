@@ -291,7 +291,7 @@ function greyscaleDrawing() {
     return draw;
 }
 
-function handDrawing() {
+function handDrawing () {
     var imagewidth = 90,
         imageheight = 85,
         pixel = 3,
@@ -302,44 +302,29 @@ function handDrawing() {
 
         selection.each(function(data) {
 
-            // Select the svg element if it exists.
-            var svg = d3.select(this).selectAll("svg").data([data]);
-            var svgEnter = svg.enter().append("svg");
+            // Select the canvas element if it exists.
+            var canvas = d3.select(this).selectAll("canvas").data([data]);
+            var canvasEnter = canvas.enter().append("canvas");
 
             // Update outer dimensions, ie, dimensions of the svg element.
-            svg = svg.merge(svgEnter);
-            svg.attr("width", width)
+            canvas = canvas.merge(canvasEnter);
+            canvas.attr("width", width)
                 .attr("height", height);
+            var context = canvas.node().getContext('2d');
 
             function color(d) {
                 var rgb = Math.round(d);
                 return "rgb(" + rgb + "," + rgb + "," + rgb + ")";
             }
-            // Enter
-            svg.selectAll("g")  // each g is a row
-                .data(data)
-                .enter()
-                .append("g")
-                .attr("transform", function(d, i) { return "translate(0," + pixel * i + ")"; })
-                .selectAll("rect")
-                .data(function (d, i) { return d; })
-                .enter()
-                .append("rect")
-                .attr("x", function(d, i) { return i * pixel; })
-                .attr("y", 0)
-                .attr("width", pixel)
-                .attr("height", pixel)
-                .attr("fill", function(d, i) { return color(d); })
-                .attr("stroke", function(d, i) { return color(d); });
 
-            // Update
-            svg.selectAll("g")
-                .data(data)
-                .selectAll("rect")
-                .data(function (d, i) { return d; })
-                .attr("x", function(d, i) { return i * pixel; })
-                .attr("fill", function(d, i) { return color(d); })
-                .attr("stroke", function(d, i) { return color(d); });
+            context.clearRect(0, 0, width, height); // Clear the canvas.
+
+            for (var i = 0; i < imageheight; i++) {
+                for (var j = 0; j < imagewidth; j++) {
+                    context.fillStyle = color(data[i][j]);
+                    context.fillRect(pixel * j, pixel * i, pixel, pixel);
+                }
+            }
         });
     }
 

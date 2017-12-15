@@ -139,7 +139,7 @@ var allCoeffs = new Array(nE);
 var boneCoeffs = new Array(nE);
 var softCoeffs = new Array(nE);
 var fractureCoeffs = new Array(nE);
-var emptyCoeffs = new Array(nE);
+var emptyCoeffs = new Array(nE).fill(0);
 
 // Surface area of 15 cm x 15 cm.
 var surface = 15e-2 * 15e-2;
@@ -229,7 +229,6 @@ function redraw() {
 }
 
 changePhotonEnergy();
-emptyCoeffs = boneCoeffs.map(function(d) { return 0; });
 
 d3.select("#figure0")
   .data([specAnode])

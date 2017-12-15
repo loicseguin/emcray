@@ -177,12 +177,6 @@ tissues = [
 
 function getHandXray(tissues, thickness, spectrum) {
     // Determine the xray image produced by the given spectrum.
-    var boneCoeffs = allAttenuationCoeffs(muBone,
-        spectrum.map(function(d) { return d[0]; }));
-    var softCoeffs = allAttenuationCoeffs(muMuscle,
-        spectrum.map(function(d) { return d[0]; }));
-    var fractureCoeffs = boneCoeffs.map(function(d) { return d * 0.8; });
-    var emptyCoeffs = boneCoeffs.map(function(d) { return 0; });
     var nrows = tissues.length;
     var ncols = tissues[0].length;
     var transmittedE = new Array(nrows);

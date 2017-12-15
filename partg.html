@@ -123,6 +123,12 @@ for (var i = 0; i < handHeight; i++) {
   rgbs[i] = new Array(handWidth);
 }
 
+var emptyCoeffs = new Array(photonEnergy.length).fill(0);
+var boneCoeffs = allAttenuationCoeffs(muBone, photonEnergy);
+var softCoeffs = allAttenuationCoeffs(muMuscle, photonEnergy);
+var fractureCoeffs = boneCoeffs.map(function(d) { return d * 0.8; });
+
+
 // Surface area of the exposed region is 15 cm x 15 cm.
 var surface = 15e-2 * 15e-2;
 

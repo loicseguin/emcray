@@ -3,8 +3,20 @@
 //     J. H. Hubbell and S. M. Seltzer
 //     https://www.nist.gov/pml/x-ray-mass-attenuation-coefficients
 //
+"use strict";
 
-var rhoSoft = 1.060E+00  // g/cm^3
+function convertMu(muData, rho) {
+    // Convert energy to keV and attenuation coefficient to m^-1.
+    var n = muData.length;
+    var converted = new Array(n);
+    var i;
+    for (i = 0; i < n; i++) {
+        converted[i] = [1000 * muData[i][0], 100 * rho * muData[i][1]];
+    }
+    return converted;
+}
+
+var rhoSoft = 1.060E+00;  // g/cm^3
 //      Energy       μ/ρ
 //      (MeV)      (cm^2/g)
 var muSoft = [
@@ -56,10 +68,11 @@ var muSoft = [
     [8.00000E+00, 2.401E-02],
     [1.00000E+01, 2.193E-02],
     [1.50000E+01, 1.915E-02],
-    [2.00000E+01, 1.787E-02]];
+    [2.00000E+01, 1.787E-02]
+];
 muSoft = convertMu(muSoft, rhoSoft);
 
-var rhoMuscle = 1.050E+00  // g/cm^3
+var rhoMuscle = 1.050E+00;  // g/cm^3
 //      Energy       μ/ρ
 //      (MeV)      (cm^2/g)
 var muMuscle = [
@@ -111,10 +124,11 @@ var muMuscle = [
     [8.00000E+00, 2.401E-02],
     [1.00000E+01, 2.192E-02],
     [1.50000E+01, 1.915E-02],
-    [2.00000E+01, 1.786E-02]];
+    [2.00000E+01, 1.786E-02]
+];
 muMuscle = convertMu(muMuscle, rhoMuscle);
 
-var rhoAdipose = 9.500E-01  // g/cm^3
+var rhoAdipose = 9.500E-01;  // g/cm^3
 //      Energy       μ/ρ
 //      (MeV)      (cm^2/g)
 var muAdipose = [
@@ -161,10 +175,11 @@ var muAdipose = [
     [8.00000E+00, 2.368E-02],
     [1.00000E+01, 2.145E-02],
     [1.50000E+01, 1.843E-02],
-    [2.00000E+01, 1.698E-02]];
+    [2.00000E+01, 1.698E-02]
+];
 muAdipose = convertMu(muAdipose, rhoAdipose);
 
-var rhoBone = 1.920E+00  // g/cm^3
+var rhoBone = 1.920E+00;  // g/cm^3
 //      Energy       μ/ρ
 //      (MeV)      (cm^2/g)
 var muBone = [
@@ -216,10 +231,11 @@ var muBone = [
     [8.00000E+00, 2.467E-02],
     [1.00000E+01, 2.314E-02],
     [1.50000E+01, 2.132E-02],
-    [2.00000E+01, 2.068E-02]];
+    [2.00000E+01, 2.068E-02]
+];
 muBone = convertMu(muBone, rhoBone);
 
-var rhoTungsten = 1.930E+01  // g/cm^3
+var rhoTungsten = 1.930E+01;  // g/cm^3
 //      Energy       μ/ρ
 //      (MeV)      (cm^2/g)
 var muTungsten = [
@@ -281,10 +297,11 @@ var muTungsten = [
     [8.00000E+00, 4.472E-02],
     [1.00000E+01, 4.747E-02],
     [1.50000E+01, 5.384E-02],
-    [2.00000E+01, 5.893E-02]];
+    [2.00000E+01, 5.893E-02]
+];
 muTungsten = convertMu(muTungsten, rhoTungsten);
 
-var rhoCopper = 8.960E+00  // g/cm^3
+var rhoCopper = 8.960E+00;  // g/cm^3
 //      Energy       μ/ρ
 //      (MeV)      (cm^2/g)
 var muCopper = [
@@ -328,10 +345,11 @@ var muCopper = [
     [8.00000E+00, 3.074E-02],
     [1.00000E+01, 3.103E-02],
     [1.50000E+01, 3.247E-02],
-    [2.00000E+01, 3.408E-02]];
+    [2.00000E+01, 3.408E-02]
+];
 muCopper = convertMu(muCopper, rhoCopper);
 
-var rhoAluminium = 2.699E+00  // g/cm^3
+var rhoAluminium = 2.699E+00;  // g/cm^3
 //      Energy       μ/ρ
 //      (MeV)      (cm^2/g)
 var muAluminium = [
@@ -372,15 +390,7 @@ var muAluminium = [
     [8.00000E+00, 2.437E-02],
     [1.00000E+01, 2.318E-02],
     [1.50000E+01, 2.195E-02],
-    [2.00000E+01, 2.168E-02]];
+    [2.00000E+01, 2.168E-02]
+];
 muAluminium = convertMu(muAluminium, rhoAluminium);
 
-function convertMu(muData, rho) {
-    // Convert energy to keV and attenuation coefficient to m^-1.
-    var n = muData.length;
-    var converted = new Array(n);
-    for (var i = 0; i < n; i++) {
-        converted[i] = [1000 * muData[i][0], 100 * rho * muData[i][1]];
-    }
-    return converted;
-}
