@@ -17,30 +17,67 @@
         <li><a href="parte.html">bas</a></li>
         <li><a href="partf.html">kVc</a></li>
         <li><a href="partg.html">mAs</a></li>
-        <li><a href="parth.html" class="active">gamma</a></li>
+        <li><a href="parth.html" class="active">courbes</a></li>
       </ul>
     </div>
     <div class="container">
       <div id="informations">
       <h2>Partie H – Courbes sensitométriques</h2>
-      <p>
-      Blah.
-      </p>
+
+      <h3>Questions</h3>
+      <ol>
+        <li>Intéressons-nous aux figures de la ligne du centre. Ces figures ont
+          été obtenues à l’aide du même type de film radiographique et pour le
+          même temps d’exposition.
+          <ol type="a">
+            <li>Comment les densités optiques et le contraste global se
+              comparent-ils entre la figure de gauche et celle du centre.
+              Expliquez les différences en vous basant sur les différentes
+              formes des spectres.</li>
+            <li>Comment les densités optiques et le contraste global se
+              comparent-ils entre la figure du centre et celle de droite.
+              Expliquez les différences en vous basant sur les différentes
+              formes des spectres.</li>
+          </ol>
+        <li>Intéressons-nous aux figures de la ligne du bas. Remarquez que ces
+          trois radiographies ont des contrastes globaux similaires et que les
+          densités optiques des régions équivalentes sont très près les unes
+          des autres. Ces figures ont été obtenues dans les mêmes conditions
+          que les figures de la ligne du centre. Toutefois, au lieu d’utiliser
+          un film radiographique, on a utilisé des capteurs numériques
+          (permettant un traitement numérique consistant entre autres à
+          modifier le facteur gamma γ). Nous pouvons donc considérer que le
+          traitement numérique appliqué par l’ordinateur a fait passer les
+          radiographies de la ligne du centre à celles de la ligne du bas. 
+            <ol type="a">
+              <li>Expliquez comment le graphique ci-dessous permet de montrer
+                que le facteur γ de la radiographie du centre est plus grand
+                que celui de la radiographie de gauche.</li>
+              <li>Expliquez comment le graphique ci-contre permet de montrer
+                que le facteur γ de la radiographie du centre est égal à celui
+                de la radiographie de droite.</li>
+            </ol>
+        </li>
+      </ol>
       </div>
       <div id="figures">
         <div id="figure1">
-          <h4 style="text-align: left;">Radiographie d'une main</h4>
+          <h4>Spectres des faisceaux de rayons X</h4>
         </div>
         <div class="controls">
-          <p>
-            <input id="kVc" type="range" min="20" max="100" step="5"
-              style="width: 120px;">
-            <span id="kVcValue"></span> kVc
-            <br>
-            <input id="mAs" type="range" min="0" max="100" step="2"
-              style="width: 120px;">
-            <span id="mAsValue"></span> mAs
-          </p>
+          Produire une image avec le spectre
+          <input type="radio" id="bluechoice" name="spectrum" value="0">
+          <label for="bluechoice">Bleu</label>
+
+          <input type="radio" id="orangechoice" name="spectrum" value="1">
+          <label for="orangechoice">Orange</label>
+
+          <input type="radio" id="greenchoice" name="spectrum" value="2"
+          checked>
+          <label for="greenchoice">Vert</label>
+        </div>
+        <br />
+        <div id="figure2" style="float: left; padding-right: 30px;">
         </div>
       </div>
       <script src="http://d3js.org/d3.v4.min.js"></script>
@@ -52,65 +89,92 @@
       <script src="sensitometry.js"></script>
       <script>
 
-var draw = handDrawing();
+var plot = lineChart()
+  .xAxisLabel("Énergie des photons (keV)")
+  .yAxisLabel("Nombre de photons (x 10¹⁰)");
 
-var dE = 5;  // in keV
+var draw = handDrawing();
+draw.pixelWidth(3);
+
+// Spectrum parameters
+var dE = 0.2;  // in keV
+var kVc = [50, 80, 80];
+var photonEnergy = [];
+var mAs = [30, 30, 60];
+var ntot = mAs.map(mAsToNphotons);  // convert mAs to number of photons
+var spectrums = [];
+var specFiltered = [];
+
+// Anode and filter parameters
 var anodeDepth = 3;  // in µm
 var anodeAngle = 30;  // in degrees
+var allAlCoeffs = [];
+
+// Sensitometric curve parameters
 var gamma = 1;
-var kVc = 50;  // in kV
-var mAs = 40;
-var ntot = mAsToNphotons(mAs)  // convert mAs to number of photons
-var Emax = 0.15;  // arbitrarily chosen to get a reasonable contrast
+var Emax = 0.05;  // energy that corresponds to a DO of 3.0
 var curve = new sensitometricCurve(Math.log10(Emax), 3.0, gamma);
-var photonEnergy,
-  spec,
-  anodeFiltered,
-  specAnode,
-  transmittedI,
-  DOs;
+var handWidth = 90;
+var handHeight = 85;
+var DOs = new Array(handHeight);          // optical densities on sensor
+var rgbs = new Array(handHeight);         // RGB values on picture
+for (var i = 0; i < handHeight; i++) {
+  DOs[i] = new Array(handWidth);
+  rgbs[i] = new Array(handWidth);
+}
 
-function redrawHand() {
-  photonEnergy = d3.range(0, kVc, dE);
-  spec = genSpectrum(photonEnergy, ntot, 0.02, 0.01);
+var emptyCoeffs = [];
+var boneCoeffs = [];
+var softCoeffs = [];
+var fractureCoeffs = [];
 
-  anodeFiltered = anodeFiltration(spec, anodeDepth * 1e-6,
+// Surface area of the exposed region is 15 cm x 15 cm.
+var surface = 15e-2 * 15e-2;
+
+ntot.map(function(n, i) {
+  var photonEnergy = d3.range(0, kVc[i], dE);
+  var spec = genSpectrum(photonEnergy, n, 0.02, 0.1);
+  var specAnode = filterByAnode(spec, anodeDepth * 1e-6,
     anodeAngle * Math.PI / 180);
-  specAnode = anodeFiltered[0];
 
-  transmittedE = getHandXray(tissues, thickness, specAnode);
-  DOs = transmittedE.map(function(row) {
-    return row.map(function(d) { return curve.energyToRGB(d); });
-  });
+  allAlCoeffs = allAttenuationCoeffs(muAluminium, photonEnergy);
+  emptyCoeffs = new Array(photonEnergy.length).fill(0);
+  boneCoeffs = allAttenuationCoeffs(muBone, photonEnergy);
+  softCoeffs = allAttenuationCoeffs(muMuscle, photonEnergy);
+  fractureCoeffs = boneCoeffs.map(function(d) { return d * 0.8; });
+
+  specFiltered = beerLambert(specAnode, 1e-3, allAlCoeffs);
+  spectrums.push(specFiltered);
+
+  // Update figures
   d3.select("#figure1")
-    .data([DOs])
+    .data([specFiltered])
+    .call(plot);
+});
+
+function changeSpectrum() {
+  var transmittedE = getHandXray(tissues, thickness, specFiltered);
+  var j, k;
+  for (j = 0; j < handHeight; j++) {
+    for (k = 0; k < handWidth; k++) {
+      var newDO = curve.energyToDO(transmittedE[j][k]);
+      DOs[j][k] = newDO;
+      rgbs[j][k] = curve.DOToRGB(newDO);
+    }
+  }
+
+  d3.select("#figure2")
+    .data([rgbs])
     .call(draw);
 }
 
-redrawHand();
-
-d3.select("#kVcValue")
-  .html(kVc);
-d3.select("#kVc")
-  .attr("value", kVc)
-  .on("input", function() {
-      kVc = +this.value;
-      redrawHand();
-      d3.select("#kVcValue")
-        .html(this.value);
+d3.selectAll("input[name='spectrum']")
+  .on("change", function() {
+    specFiltered = spectrums[+this.value];
+    changeSpectrum();
   });
 
-d3.select("#mAsValue")
-  .html(mAs);
-d3.select("#mAs")
-  .attr("value", mAs)
-  .on("input", function() {
-      mAs = +this.value;
-      ntot = mAsToNphotons(mAs);
-      redrawHand();
-      d3.select("#mAsValue")
-        .html(this.value);
-  });
+changeSpectrum();
       </script>
     </div>
   </body>
