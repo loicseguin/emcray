@@ -3,7 +3,7 @@
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width" />
-    <title>Simulation d'une radiographie – Partie F</title>
+    <title>Simulation d'une radiographie – mAs</title>
     <link rel="stylesheet" type="text/css" href="style.css" />
   </head>
   <body>
@@ -11,23 +11,23 @@
       <ul>
         <li><a href="index.html" id="logo">emxray</a></li>
         <li><a href="simul.html">sim</a></li>
-        <li><a href="partb.html">spectres</a></li>
-        <li><a href="partc.html">talon</a></li>
-        <li><a href="partd.html">filtres</a></li>
-        <li><a href="parte.html">bas</a></li>
-        <li><a href="partf.html" class="active">kVc</a></li>
-        <li><a href="partg.html">mAs</a></li>
+        <li><a href="spectres.html">spectres</a></li>
+        <li><a href="talon.html">talon</a></li>
+        <li><a href="filtres.html">filtres</a></li>
+        <li><a href="bas.html">bas</a></li>
+        <li><a href="kvc.html">kVc</a></li>
+        <li><a href="mas.html" class="active">mAs</a></li>
       </ul>
     </div>
     <div class="container">
       <div id="informations">
-      <h2>Partie F – Effet des kVc sur une radiographie</h2>
+      <h2>Effet des mAs sur une radiographie</h2>
       <p>
-      Les spectres illustrés ci-contre ont tous la même intensité totale. Ils
-      ont été produits en plaçant un filtre d'aluminium devant la fenêtre du
-      tube de sorte à bloquer les rayons X de basse énergie. Les radiographies
-      de la main d'un patient illustrées sous le graphique ont été obtenues
-      avec le même récepteur calibré de la même façon (même courbe
+      Les spectres illustrés ci-contre ont été obtenus avec des valeurs de mAs
+      différentes. Ils ont été produits en plaçant un filtre d'aluminium devant
+      la fenêtre du tube de sorte à bloquer les rayons X de basse énergie. Les
+      radiographies de la main d'un patient illustrées sous le graphique ont
+      été obtenues avec le même récepteur calibré de la même façon (même courbe
       sensitométrique).
       </p>
       <p>
@@ -39,34 +39,18 @@
 
       <table>
         <tr>
-          <th>Spectre</th><th>Contraste global</th><th>Contraste local</th><th>Intensité totale (W/m<sup>2</sup>)</th>
+          <th>Spectre</th><th>mAs</th><th>Contraste global</th><th>Contraste local</th><th>Intensité totale (W/m<sup>2</sup>)</th>
         </tr>
         <tr>
-          <td>Bleu</td><td id="cg1"></td><td id="cl1"></td><td id="e1"></td>
+          <td>Bleu</td><td id="ma1"></td><td id="cg1"></td><td id="cl1"></td><td id="e1"></td>
         </tr>
         <tr>
-          <td>Orange</td><td id="cg2"></td><td id="cl2"></td><td id="e2"></td>
+          <td>Orange</td><td id="ma2"></td><td id="cg2"></td><td id="cl2"></td><td id="e2"></td>
         </tr>
         <tr>
-          <td>Vert</td><td id="cg3"></td><td id="cl3"></td><td id="e3"></td>
+          <td>Vert</td><td id="ma3"></td><td id="cg3"></td><td id="cl3"></td><td id="e3"></td>
         </tr>
       </table>
-
-      <h3>Questions</h3>
-
-      <ol>
-        <li>Si nous nous intéressons à la radiographie entière (tous les pixels
-          de cette radiographie), quel est l’effet d’une diminution des kVc sur
-          le contraste global de la radiographie ?</li>
-        <li>Si nous nous intéressons plutôt au contraste local  entre une
-          partie de l’os et la fracture présente sur l'annulaire,
-          faut-il augmenter ou diminuer les kVc pour augmenter ce contraste
-          local ?</li>
-        <li>Pourquoi la radiographie avec le meilleur contraste global ne
-          permet-elle pas de distinguer la fracture ?</li>
-        <li>Pour la radiographie obtenue avec le spectre bleu, les doigts
-          sont-ils surexposés ou sous-exposés ?</li>
-      </ol>
 
       </div>
       <div id="figures">
@@ -101,18 +85,19 @@ drawings.map(function(d) { d.pixelWidth(2); });
 
 // Spectrum parameters
 var dE = 0.2;  // in keV
-var kVc = [30, 50, 70];
-var mAs = 50;
-var ntot = mAsToNphotons(mAs)  // convert mAs to number of photons
-var Etot = 0.05;  // in J
+var kVc = 60;
+var photonEnergy = d3.range(0, kVc, dE);
+var mAs = [30, 50, 70];
+var ntot = mAs.map(mAsToNphotons);  // convert mAs to number of photons
 
 // Anode and filter parameters
 var anodeDepth = 3;  // in µm
 var anodeAngle = 30;  // in degrees
+var allAlCoeffs = allAttenuationCoeffs(muAluminium, photonEnergy);
 
-// Sensitometric curve parameters. 
+// Sensitometric curve parameters
 var gamma = 1;
-var Emax = 0.05;
+var Emax = 0.05;  // energy that corresponds to a DO of 3.0
 var curve = new sensitometricCurve(Math.log10(Emax), 3.0, gamma);
 var handWidth = 90;
 var handHeight = 85;
@@ -122,28 +107,21 @@ for (var i = 0; i < handHeight; i++) {
   DOs[i] = new Array(handWidth);
   rgbs[i] = new Array(handWidth);
 }
-var emptyCoeffs;
-var boneCoeffs;
-var softCoeffs;
-var fractureCoeffs;
 
-kVc.map(function(kV, i) {
-  var photonEnergy = d3.range(0, kV, dE);
-  emptyCoeffs = new Array(photonEnergy.length).fill(0);
-  boneCoeffs = allAttenuationCoeffs(muBone, photonEnergy);
-  softCoeffs = allAttenuationCoeffs(muMuscle, photonEnergy);
-  fractureCoeffs = boneCoeffs.map(function(d) { return d * 0.8; });
-  var allAlCoeffs = allAttenuationCoeffs(muAluminium, photonEnergy);
-  var spec = genSpectrum(photonEnergy, ntot, 0.02, 0.1);
+var emptyCoeffs = new Array(photonEnergy.length).fill(0);
+var boneCoeffs = allAttenuationCoeffs(muBone, photonEnergy);
+var softCoeffs = allAttenuationCoeffs(muMuscle, photonEnergy);
+var fractureCoeffs = boneCoeffs.map(function(d) { return d * 0.8; });
+
+
+// Surface area of the exposed region is 15 cm x 15 cm.
+var surface = 15e-2 * 15e-2;
+
+ntot.map(function(n, i) {
+  var spec = genSpectrum(photonEnergy, n, 0.02, 0.1);
   var specAnode = filterByAnode(spec, anodeDepth * 1e-6,
     anodeAngle * Math.PI / 180);
   var specFiltered = beerLambert(specAnode, 1e-3, allAlCoeffs);
-
-  // Scale to have the same total energy.
-  var E = totalEnergy(specFiltered);
-  var specFiltered = specFiltered.map(function(d) {
-    return [d[0], d[1] * Etot / E];
-  });
 
   var transmittedE = getHandXray(tissues, thickness, specFiltered);
   for (var j = 0; j < handHeight; j++) {
@@ -155,10 +133,14 @@ kVc.map(function(kV, i) {
   }
 
   // Fill data table
+  d3.select("#ma" + (i + 1)).html(mAs[i].toPrecision(3));
+
+  // Intensity with surface area of 15cm x 15 cm and exposure time of 1 s
   var energy = totalEnergy(specFiltered);
-  // Compute intensity with surface area of 15cm x 15 cm and exposure time of 1 s
-  var intensity = energy / 0.0225;
+  var intensity = energy / surface;
   d3.select("#e" + (i + 1)).html(intensity.toPrecision(3));
+
+  // Global contrast
   var DOmax = DOs[20][10];
   var DOmin = DOs[39][50];
   d3.select("#cg" + (i + 1))
